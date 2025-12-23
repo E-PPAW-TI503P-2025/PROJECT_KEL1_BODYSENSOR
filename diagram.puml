@@ -1,0 +1,51 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor Admin
+actor User
+actor "IoT Device\n(Body Sensor)" as Device
+
+rectangle "Centralized Body Sensor Monitoring System" {
+
+  usecase "Login" as UC_Login
+  usecase "Logout" as UC_Logout
+
+  usecase "Melihat Riwayat\nAktivitas" as UC_History
+  usecase "Monitoring Data\nBody Sensor" as UC_Monitor
+  usecase "Melihat Status\nNormal / Abnormal" as UC_Status
+
+  usecase "Mengatur Mode\nMonitoring (Otomatis / Manual)" as UC_Mode
+  usecase "Mengatur Ambang\nBatas (Threshold)" as UC_Threshold
+  usecase "Mengatur Notifikasi\nPeringatan" as UC_Notify
+
+  usecase "Mengirim Data\nSensor Tubuh" as UC_Send
+}
+
+'==== Relasi Admin ====
+Admin --> UC_History
+Admin --> UC_Mode
+Admin --> UC_Threshold
+Admin --> UC_Notify
+Admin --> UC_Logout
+Admin --> UC_Login
+
+'==== Relasi User ====
+User --> UC_Monitor
+User --> UC_Status
+User --> UC_Logout
+User --> UC_Login
+
+'==== Relasi Device ====
+Device --> UC_Send
+
+'==== Include Login (biar mirip diagram kamu) ====
+UC_History ..> UC_Login : <<include>>
+UC_Mode ..> UC_Login : <<include>>
+UC_Threshold ..> UC_Login : <<include>>
+UC_Notify ..> UC_Login : <<include>>
+UC_Monitor ..> UC_Login : <<include>>
+UC_Status ..> UC_Login : <<include>>
+
+@enduml
