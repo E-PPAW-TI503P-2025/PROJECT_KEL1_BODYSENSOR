@@ -1,0 +1,26 @@
+@startuml
+title Deployment Diagram - Body Sensor Step Counter System
+
+node "User Device\n(Web Browser)" {
+  component "Frontend Web\n(Dashboard & Chart)" as FE
+}
+
+node "Body Sensor Device\n(Arduino + MPU6050)" {
+  component "MPU6050\n(Accelerometer)" as MPU
+  component "Arduino MCU\n(Step Detection Logic)" as MCU
+}
+
+node "Web Application\n(Client Side)" {
+  component "Web Serial API" as WS
+  component "JavaScript Logic\n(Parsing & State)" as JS
+  component "Chart.js\n(Visualization)" as CHART
+  component "LocalStorage\n(Optional)" as LS
+}
+
+MPU -->MCU 
+MCU --> WS 
+WS --> JS
+JS --> FE
+JS --> CHART
+JS --> LS
+@enduml
