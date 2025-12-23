@@ -1,0 +1,43 @@
+@startuml
+title Sequence Diagram: Step Counter (Hardware vs Software via WebSerial)
+
+actor User
+participant "MPU6050 (Sensor)" as Sensor
+participant "Arduino (Controller)" as Arduino
+participant "Browser (WebSerial)" as Web
+database "Browser Storage" as Local
+
+== Fase Inisialisasi & Koneksi ==
+User -> Web: Klik tombol "Connect"
+Web -> User: Minta Izin Port USB
+User --> Web: Berikan Izin
+Web -> Arduino: Buka Jalur Serial (Baud 115200)
+Arduino -> Sensor: Inisialisasi & Kalibrasi
+
+== Fase Deteksi (Hardware - Loop) ==
+loop Setiap 20ms - 50ms
+    Sensor -> Arduino: Kirim Data Mentah (Ax, Ay, Az)
+    note over Arduino: Hitung Magnitude (SVM)\nSqrt(Ax^2 + Ay^2 + Az^2)
+    
+    alt Jika SVM > Threshold DAN Melewati Jeda Waktu (Debounce)
+        Arduino -> Arduino: stepCount++
+        Arduino -> Web: Kirim Data Serial ("STEP:n\n")
+    else Di bawah Threshold
+        Arduino -> Arduino: Idle / Listening
+    end
+end
+
+== Fase Visualisasi (Software - Event Driven) ==
+Web -> Web: Listen to Stream (Serial Reader)
+activate Web
+group Parsing & Render
+    Web -> Web: Extract Integer dari "STEP:n"
+    Web -> Web: Update HTML (Display Angka)
+    Web -> Web: Update Chart.js (Push ke Array Grafik)
+end
+
+== Fase Persistensi ==
+Web -> Local: Simpan Total Langkah (localStorage)
+Local --> Web: Data Tersimpan
+deactivate Web
+@enduml
