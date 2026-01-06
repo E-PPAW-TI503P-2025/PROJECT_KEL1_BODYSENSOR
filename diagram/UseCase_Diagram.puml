@@ -1,51 +1,35 @@
 @startuml
 left to right direction
-skinparam packageStyle rectangle
-skinparam shadowing false
 
 actor Admin
-actor User
-actor "IoT Device\n(Body Sensor)" as Device
+actor "User (Mahasiswa/Karyawan)" as User
 
-rectangle "Centralized Body Sensor Monitoring System" {
+rectangle "Smart Room Occupancy System" {
 
   usecase "Login" as UC_Login
-  usecase "Logout" as UC_Logout
 
-  usecase "Melihat Riwayat\nAktivitas" as UC_History
-  usecase "Monitoring Data\nBody Sensor" as UC_Monitor
-  usecase "Melihat Status\nNormal / Abnormal" as UC_Status
+  usecase "Manage Ruangan (CRUD)" as UC_ManageRoom
+  usecase "Manage Device IoT\n(Assign / Unassign ESP32)" as UC_ManageDevice
+  usecase "Lihat Dashboard Monitoring" as UC_Dashboard
 
-  usecase "Mengatur Mode\nMonitoring (Otomatis / Manual)" as UC_Mode
-  usecase "Mengatur Ambang\nBatas (Threshold)" as UC_Threshold
-  usecase "Mengatur Notifikasi\nPeringatan" as UC_Notify
-
-  usecase "Mengirim Data\nSensor Tubuh" as UC_Send
+  usecase "Melihat Daftar Ruangan" as UC_ViewRoom
+  usecase "Melakukan Booking Ruangan" as UC_Booking
+  usecase "Melihat History Booking" as UC_History
 }
 
-'==== Relasi Admin ====
-Admin --> UC_History
-Admin --> UC_Mode
-Admin --> UC_Threshold
-Admin --> UC_Notify
-Admin --> UC_Logout
+' Admin relations
 Admin --> UC_Login
+Admin --> UC_ManageRoom
+Admin --> UC_ManageDevice
+Admin --> UC_Dashboard
 
-'==== Relasi User ====
-User --> UC_Monitor
-User --> UC_Status
-User --> UC_Logout
-User --> UC_Login
+' User relations
+User --> UC_ViewRoom
+User --> UC_Booking
+User --> UC_History
 
-'==== Relasi Device ====
-Device --> UC_Send
-
-'==== Include Login (biar mirip diagram kamu) ====
-UC_History ..> UC_Login : <<include>>
-UC_Mode ..> UC_Login : <<include>>
-UC_Threshold ..> UC_Login : <<include>>
-UC_Notify ..> UC_Login : <<include>>
-UC_Monitor ..> UC_Login : <<include>>
-UC_Status ..> UC_Login : <<include>>
-
+' Include relations
+UC_ManageRoom ..> UC_Login : <<include>>
+UC_ManageDevice ..> UC_Login : <<include>>
+UC_Dashboard ..> UC_Login : <<include>>
 @enduml
