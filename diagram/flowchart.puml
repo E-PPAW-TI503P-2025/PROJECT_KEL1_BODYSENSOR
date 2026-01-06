@@ -1,0 +1,28 @@
+@startuml
+title Flowchart: Algoritma Deteksi Langkah (Arduino)
+
+start
+:Inisialisasi Sensor MPU6050;
+:Kalibrasi Offset (Zero-G);
+
+repeat
+  :Baca Data Akselerasi (Ax, Ay, Az);
+  :Hitung Magnitude (SVM):
+  sqrt(Ax^2 + Ay^2 + Az^2);
+  
+  :Filter Sinyal (SMA Filter)
+  untuk menghilangkan noise;
+
+  if (Magnitude > Threshold?) then (Ya)
+    if (Waktu Sekarang - Waktu Terakhir > Debounce?) then (Ya)
+      :Increment stepCount++;
+      :Kirim "STEP:n" via Serial;
+      :Update Waktu Terakhir;
+    else (Tidak)
+      :Abaikan (Noise/Guncangan);
+    endif
+  else (Tidak)
+    :Tunggu Sampai Ada Gerakan;
+  endif
+repeat while (Sistem Aktif?)
+@enduml

@@ -1,0 +1,38 @@
+@startuml
+title Activity Diagram: Monitoring Langkah User
+
+|User|
+start
+:Buka Dashboard Web;
+:Klik Tombol "Connect Serial";
+
+|Web Browser|
+:Tampilkan Daftar Port USB;
+
+|User|
+:Pilih Port Arduino;
+
+|Web Browser|
+:Buka Koneksi WebSerial;
+:Mulai Mendengarkan Stream;
+
+|IoT Device (Arduino)|
+:Mulai Membaca Gerakan Tubuh;
+repeat
+  :Deteksi Gerakan;
+  if (Langkah Terdeteksi?) then (Ya)
+    :Kirim Data "STEP:n";
+  endif
+backward:Terus Memantau;
+repeat while (Kabel Terhubung?)
+
+|Web Browser|
+:Terima Data Serial;
+:Parsing String ke Integer;
+:Update Grafik & Angka di UI;
+:Simpan ke LocalStorage;
+
+|User|
+:Lihat Statistik & Status;
+stop
+@enduml
