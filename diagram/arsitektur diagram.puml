@@ -1,47 +1,49 @@
 @startuml
-title Arsitektur Sistem Terpadu: IoT Step Counter (WebSerial)
-
+!theme plain
 skinparam componentStyle rectangle
-skinparam linetype polyline
+skinparam packageStyle rectangle
 
-package "Physical Layer (Hardware)" {
-    component "MPU6050 Sensor" as Sensor #LightBlue
-    component "Arduino/Pico Controller" as MCU #LightGreen {
-        node "Signal Processing (SVM)" as SVM
-        node "Step Detection Logic" as Logic
-    }
+title Architecture Diagram - Smart Room Occupancy System
+
+package "IoT Device Layer" {
+    [PIR Sensor] as PIR
+    [ESP32 Microcontroller] as ESP32
+    PIR -> ESP32 : Analog/Digital Signal
 }
 
-package "Communication Layer (Bridge)" {
-    interface "USB Serial Port" as USB
-    component "Web Serial API" as WebSerial #Gold
-}
-
-package "Application Layer (Web Browser)" {
-    component "Frontend Dashboard" as UI #LightPink {
-        node "Chart.js (Real-time)" as Chart
-        node "Step Counter Display" as Display
-    }
+package "Backend Server (ElysiaJS)" {
+    [API Endpoints] as API
+    [Business Logic] as Logic
+    [Prisma ORM] as Prisma
     
-    component "JavaScript Engine" as JS {
-        node "Data Parser" as Parser
-        node "State Management" as State
-    }
-    
-    database "LocalStorage / DB" as DB #LightGrey
+    API -> Logic
+    Logic -> Prisma
 }
 
-'--- Alur Data ---
-Sensor -right-> SVM : Raw Data (Ax, Ay, Az)
-SVM -right-> Logic : Magnitude (g)
-Logic -down-> USB : String "STEP:n"
+database "Data Layer" {
+    [SQLite File] as DB
+}
 
-USB -down-> WebSerial : Data Stream
-WebSerial -down-> Parser : Read Stream
+package "Frontend (Next.js)" {
+    [Admin Dashboard] as AdminUI
+    [User Booking Page] as UserUI
+    [State Management] as Store
+}
 
-Parser -> State : Update Step Total
-State -> Display : Re-render UI
-State -> Chart : Push Data Point
-State -> DB : Persist History
+' Relations
+ESP32 -right-> API : HTTP POST (Status Update)
+Prisma -down-> DB : Read/Write SQL
+AdminUI -down-> API : REST API Request
+UserUI -down-> API : REST API Request
+API .up.> AdminUI : WebSocket / Realtime Update
 
+note right of ESP32
+  Kirim data:
+  { "deviceId": "R01", "isOccupied": true }
+end note
+
+note bottom of DB
+  Data persistence via 
+  Prisma Client
+end note
 @enduml
