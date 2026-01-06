@@ -1,43 +1,44 @@
 @startuml
-title Sequence Diagram: Step Counter (Hardware vs Software via WebSerial)
+title Sequence Diagram: Update Status Ruangan Realtime
 
-actor User
-participant "MPU6050 (Sensor)" as Sensor
-participant "Arduino (Controller)" as Arduino
-participant "Browser (WebSerial)" as Web
-database "Browser Storage" as Local
+' Pengaturan Tampilan
+skinparam responseMessageBelowArrow true
+skinparam style strictuml
+autonumber
 
-== Fase Inisialisasi & Koneksi ==
-User -> Web: Klik tombol "Connect"
-Web -> User: Minta Izin Port USB
-User --> Web: Berikan Izin
-Web -> Arduino: Buka Jalur Serial (Baud 115200)
-Arduino -> Sensor: Inisialisasi & Kalibrasi
+' Definisi Lifeline (Objek yang berinteraksi)
+participant "ESP32 Sensor" as ESP32
+participant "API Backend\n(Elysia)" as API
+participant "Room Controller" as Ctrl
+database "Database\n(Prisma/SQLite)" as DB
 
-== Fase Deteksi (Hardware - Loop) ==
-loop Setiap 20ms - 50ms
-    Sensor -> Arduino: Kirim Data Mentah (Ax, Ay, Az)
-    note over Arduino: Hitung Magnitude (SVM)\nSqrt(Ax^2 + Ay^2 + Az^2)
-    
-    alt Jika SVM > Threshold DAN Melewati Jeda Waktu (Debounce)
-        Arduino -> Arduino: stepCount++
-        Arduino -> Web: Kirim Data Serial ("STEP:n\n")
-    else Di bawah Threshold
-        Arduino -> Arduino: Idle / Listening
-    end
-end
+' == Mulai Proses Update ==
 
-== Fase Visualisasi (Software - Event Driven) ==
-Web -> Web: Listen to Stream (Serial Reader)
-activate Web
-group Parsing & Render
-    Web -> Web: Extract Integer dari "STEP:n"
-    Web -> Web: Update HTML (Display Angka)
-    Web -> Web: Update Chart.js (Push ke Array Grafik)
-end
+' 1. ESP32 mengirim data
+ESP32 -> API: POST /update-status\n(JSON: {room_id: "R-101", is_moving: true})
+activate API
 
-== Fase Persistensi ==
-Web -> Local: Simpan Total Langkah (localStorage)
-Local --> Web: Data Tersimpan
-deactivate Web
+' 2. API (Elysia) meneruskan ke Controller yang tepat
+API -> Ctrl: Invoke updateStatusHandler(body)
+activate Ctrl
+
+' 3. Controller melakukan validasi dan logika bisnis
+Ctrl -> Ctrl: Validate Input Data
+
+' 4. Controller meminta Database untuk update data
+Ctrl -> DB: prisma.room.update({ \n  where: {id: "R-101"}, \n  data: {status: "OCCUPIED"} \n})
+activate DB
+
+' 5. Database mengembalikan hasil
+DB --> Ctrl: Return Updated Room Object
+deactivate DB
+
+' 6. Controller mengembalikan respon ke API framework
+Ctrl --> API: Return JSON Result
+deactivate Ctrl
+
+' 7. API mengirim respon HTTP balik ke ESP32
+API --> ESP32: HTTP 200 OK\n(JSON: {success: true, message: "Updated"})
+deactivate API
+
 @enduml
