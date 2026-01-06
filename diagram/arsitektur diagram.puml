@@ -1,0 +1,49 @@
+@startuml
+!theme plain
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+title Architecture Diagram - Smart Room Occupancy System
+
+package "IoT Device Layer" {
+    [PIR Sensor] as PIR
+    [ESP32 Microcontroller] as ESP32
+    PIR -> ESP32 : Analog/Digital Signal
+}
+
+package "Backend Server (ElysiaJS)" {
+    [API Endpoints] as API
+    [Business Logic] as Logic
+    [Prisma ORM] as Prisma
+    
+    API -> Logic
+    Logic -> Prisma
+}
+
+database "Data Layer" {
+    [SQLite File] as DB
+}
+
+package "Frontend (Next.js)" {
+    [Admin Dashboard] as AdminUI
+    [User Booking Page] as UserUI
+    [State Management] as Store
+}
+
+' Relations
+ESP32 -right-> API : HTTP POST (Status Update)
+Prisma -down-> DB : Read/Write SQL
+AdminUI -down-> API : REST API Request
+UserUI -down-> API : REST API Request
+API .up.> AdminUI : WebSocket / Realtime Update
+
+note right of ESP32
+  Kirim data:
+  { "deviceId": "R01", "isOccupied": true }
+end note
+
+note bottom of DB
+  Data persistence via 
+  Prisma Client
+end note
+@enduml

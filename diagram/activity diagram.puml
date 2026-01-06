@@ -1,0 +1,36 @@
+@startuml
+title Swimlane Activity Diagram - User Melakukan Booking Ruangan
+
+|User|
+start
+:Memilih ruangan;
+:Memilih tanggal & waktu;
+:Klik tombol "Booking";
+
+|Sistem/Backend|
+:Terima request booking;
+:Validasi input (ruangan, waktu);
+
+|Database/Admin|
+:Query ketersediaan ruangan\nberdasarkan waktu;
+
+|Sistem/Backend|
+if (Available?) then (Ya)
+  :Generate ID booking;
+  |Database/Admin|
+  :Simpan data booking;
+  :Update status ruangan\n(pada slot waktu itu);
+  |Sistem/Backend|
+  :Kirim response sukses;
+  |User|
+  :Tampilkan pesan "Booking berhasil";
+  stop
+else (Tidak)
+  :Kirim response gagal\n(ruangan tidak tersedia);
+  |User|
+  :Tampilkan pesan "Ruangan tidak tersedia";
+  :User pilih waktu/ruangan lain;
+  stop
+endif
+
+@enduml

@@ -1,0 +1,36 @@
+@startuml
+skinparam ActivityFontSize 12
+skinparam ActivityDiamondFontSize 12
+skinparam SupportRender true
+
+title Flowchart Logika Deteksi Sensor - Smart Room Occupancy System
+
+start
+
+:Sensor PIR mendeteksi pergerakan;
+
+if (Apakah ada gerakan terdeteksi?) then (Ya)
+  :Kirim status "Occupied" ke Server (HTTP POST);
+  :Update Database:
+  - isOccupied = true
+  - lastMotion = NOW();
+  #LightGreen:Tampilkan status "Terisi" di Dashboard;
+else (Tidak)
+  :Ambil data "lastMotion" dari Database;
+  :Hitung selisih waktu:
+  (NOW - lastMotion);
+  
+  if (Apakah selisih > 10 Menit?) then (Ya)
+    :Update Database:
+    - isOccupied = false;
+    #LightBlue:Tampilkan status "Kosong" di Dashboard;
+  else (Tidak)
+    :Pertahankan status "Occupied";
+    :Tunggu siklus pengecekan berikutnya;
+  endif
+endif
+
+stop
+
+footer Smart Room Occupancy System - Project Pico 2025
+@endum

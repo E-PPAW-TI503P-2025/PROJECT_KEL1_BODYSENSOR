@@ -1,0 +1,36 @@
+@startuml
+title Refined ERD - Step Counter System (Code-Sync)
+
+entity "User" as user {
+  * user_id : INT <<PK>>
+  --
+  * name : VARCHAR(100)
+}
+
+entity "Monitoring_Session" as session {
+  * session_id : INT <<PK>>
+  --
+  * start_time : TIMESTAMP
+  * end_time : TIMESTAMP
+  * device_status : VARCHAR(20) 'Sesuai status di WebSerialManager
+}
+
+entity "Step_Data" as steps {
+  * data_id : BIGINT <<PK>>
+  --
+  * step_count : INT 'Sesuai AppState.stepTotal
+  * raw_magnitude : FLOAT 'Sesuai SMAFilter output
+  * timestamp_ms : LONG 'Sesuai AccelSample.timestampMs
+}
+
+entity "Configuration" as config {
+  * config_id : INT <<PK>>
+  --
+  * threshold_g : FLOAT 'Sesuai StepDetector.thresholdG
+  * debounce_ms : INT 'Sesuai StepDetector.debounceMs
+}
+
+user ||--o{ session : "memulai"
+session ||--o{ steps : "mencatat"
+config ||--o{ session : "diterapkan pada"
+@enduml

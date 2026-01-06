@@ -1,5 +1,14 @@
 # BodySensor - Kelompok 1
 
+## 📋 Daftar Isi
+- [Frontend (Next.js)](#-frontend-nextjs)
+- [Backend (Elysia)](#-backend-elysia)
+- [Tim Pengembang](#-tim-pengembang)
+
+---
+
+# 🎨 Frontend (Next.js)
+
 ## 📦 Cara Install Next.js dengan Bun
 
 Dokumentasi lengkap untuk instalasi dan menjalankan Next.js menggunakan Bun sebagai package manager.
@@ -169,6 +178,178 @@ bun pm cache rm
 - [Dokumentasi Bun](https://bun.sh/docs)
 - [Dokumentasi Next.js](https://nextjs.org/docs)
 - [Tutorial Next.js](https://nextjs.org/learn)
+
+---
+
+# ⚙️ Backend (Elysia)
+
+## 🚀 Tech Stack Backend
+
+Backend project ini menggunakan:
+- **Runtime**: [Bun](https://bun.sh) - JavaScript runtime yang sangat cepat
+- **Framework**: [Elysia](https://elysiajs.com) - Framework web modern untuk Bun
+- **Database ORM**: [Prisma](https://www.prisma.io) - ORM TypeScript untuk database
+- **Language**: TypeScript
+
+---
+
+## 📦 Install Dependencies Backend
+
+### Langkah 1: Pastikan Bun Sudah Terinstall
+
+Jika belum install Bun, lihat instruksi di [bagian Frontend](#-langkah-1-install-bun) di atas.
+
+### Langkah 2: Install Dependencies
+
+```bash
+# Masuk ke direktori backend
+cd backend
+
+# Install semua dependencies
+bun install
+```
+
+**Dependencies yang akan terinstall:**
+- `elysia` - Framework web untuk Bun
+- `@prisma/client` - Prisma client untuk database
+- `prisma` (dev) - Prisma CLI tools
+- `bun-types` (dev) - Type definitions untuk Bun
+
+---
+
+## 🏗️ Struktur Direktori Backend
+
+```
+backend/
+├── src/
+│   └── index.ts           # Entry point aplikasi
+├── prisma/                # (akan dibuat saat setup Prisma)
+│   └── schema.prisma      # Database schema
+├── node_modules/          # Dependencies
+├── package.json           # Daftar dependencies
+├── bun.lock              # Lock file Bun
+├── tsconfig.json         # Konfigurasi TypeScript
+└── .gitignore            # File yang diabaikan Git
+```
+
+---
+
+## ⚡ Menjalankan Backend
+
+### Mode Development (dengan auto-reload):
+```bash
+cd backend
+bun dev
+```
+
+Backend akan berjalan di: **http://localhost:3000**
+
+### Mode Production:
+```bash
+cd backend
+bun run src/index.ts
+```
+
+---
+
+## 🗄️ Setup Database dengan Prisma
+
+### Inisialisasi Prisma (jika belum ada):
+```bash
+cd backend
+
+# Inisialisasi Prisma dengan database pilihan
+bunx prisma init --datasource-provider postgresql
+# Atau gunakan: sqlite, mysql, mongodb, sqlserver
+```
+
+### Generate Prisma Client:
+```bash
+cd backend
+bunx prisma generate
+```
+
+### Migrasi Database:
+```bash
+cd backend
+
+# Buat migrasi baru
+bunx prisma migrate dev --name nama_migrasi
+
+# Apply migrasi ke production
+bunx prisma migrate deploy
+```
+
+### Prisma Studio (GUI untuk database):
+```bash
+cd backend
+bunx prisma studio
+```
+
+---
+
+## 📝 Perintah-Perintah Penting Backend
+
+### Install package baru:
+```bash
+cd backend
+bun add nama-package
+```
+
+### Install dev dependency:
+```bash
+cd backend
+bun add -d nama-package
+```
+
+### Uninstall package:
+```bash
+cd backend
+bun remove nama-package
+```
+
+### Format code dengan Prisma:
+```bash
+cd backend
+bunx prisma format
+```
+
+### Check status database:
+```bash
+cd backend
+bunx prisma db push --preview-feature
+```
+
+---
+
+## 🛠️ Troubleshooting Backend
+
+### Port 3000 sudah digunakan?
+Edit file `src/index.ts` dan ganti port:
+```typescript
+const app = new Elysia().get("/", () => "Hello Elysia").listen(3001);
+```
+
+### Error Prisma Client?
+```bash
+cd backend
+bunx prisma generate
+```
+
+### Clear cache dan reinstall:
+```bash
+cd backend
+rm -rf node_modules bun.lock
+bun install
+```
+
+---
+
+## 📚 Resources Backend
+
+- [Dokumentasi Elysia](https://elysiajs.com/documentation)
+- [Dokumentasi Prisma](https://www.prisma.io/docs)
+- [Dokumentasi Bun](https://bun.sh/docs)
 
 ---
 
