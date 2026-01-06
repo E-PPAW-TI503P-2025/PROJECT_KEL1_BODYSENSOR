@@ -1,0 +1,47 @@
+@startuml
+title Arsitektur Sistem Terpadu: IoT Step Counter (WebSerial)
+
+skinparam componentStyle rectangle
+skinparam linetype polyline
+
+package "Physical Layer (Hardware)" {
+    component "MPU6050 Sensor" as Sensor #LightBlue
+    component "Arduino/Pico Controller" as MCU #LightGreen {
+        node "Signal Processing (SVM)" as SVM
+        node "Step Detection Logic" as Logic
+    }
+}
+
+package "Communication Layer (Bridge)" {
+    interface "USB Serial Port" as USB
+    component "Web Serial API" as WebSerial #Gold
+}
+
+package "Application Layer (Web Browser)" {
+    component "Frontend Dashboard" as UI #LightPink {
+        node "Chart.js (Real-time)" as Chart
+        node "Step Counter Display" as Display
+    }
+    
+    component "JavaScript Engine" as JS {
+        node "Data Parser" as Parser
+        node "State Management" as State
+    }
+    
+    database "LocalStorage / DB" as DB #LightGrey
+}
+
+'--- Alur Data ---
+Sensor -right-> SVM : Raw Data (Ax, Ay, Az)
+SVM -right-> Logic : Magnitude (g)
+Logic -down-> USB : String "STEP:n"
+
+USB -down-> WebSerial : Data Stream
+WebSerial -down-> Parser : Read Stream
+
+Parser -> State : Update Step Total
+State -> Display : Re-render UI
+State -> Chart : Push Data Point
+State -> DB : Persist History
+
+@enduml
