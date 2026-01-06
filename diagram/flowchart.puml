@@ -1,28 +1,36 @@
 @startuml
-title Flowchart: Algoritma Deteksi Langkah (Arduino)
+skinparam ActivityFontSize 12
+skinparam ActivityDiamondFontSize 12
+skinparam SupportRender true
+
+title Flowchart Logika Deteksi Sensor - Smart Room Occupancy System
 
 start
-:Inisialisasi Sensor MPU6050;
-:Kalibrasi Offset (Zero-G);
 
-repeat
-  :Baca Data Akselerasi (Ax, Ay, Az);
-  :Hitung Magnitude (SVM):
-  sqrt(Ax^2 + Ay^2 + Az^2);
+:Sensor PIR mendeteksi pergerakan;
+
+if (Apakah ada gerakan terdeteksi?) then (Ya)
+  :Kirim status "Occupied" ke Server (HTTP POST);
+  :Update Database:
+  - isOccupied = true
+  - lastMotion = NOW();
+  #LightGreen:Tampilkan status "Terisi" di Dashboard;
+else (Tidak)
+  :Ambil data "lastMotion" dari Database;
+  :Hitung selisih waktu:
+  (NOW - lastMotion);
   
-  :Filter Sinyal (SMA Filter)
-  untuk menghilangkan noise;
-
-  if (Magnitude > Threshold?) then (Ya)
-    if (Waktu Sekarang - Waktu Terakhir > Debounce?) then (Ya)
-      :Increment stepCount++;
-      :Kirim "STEP:n" via Serial;
-      :Update Waktu Terakhir;
-    else (Tidak)
-      :Abaikan (Noise/Guncangan);
-    endif
+  if (Apakah selisih > 10 Menit?) then (Ya)
+    :Update Database:
+    - isOccupied = false;
+    #LightBlue:Tampilkan status "Kosong" di Dashboard;
   else (Tidak)
-    :Tunggu Sampai Ada Gerakan;
+    :Pertahankan status "Occupied";
+    :Tunggu siklus pengecekan berikutnya;
   endif
-repeat while (Sistem Aktif?)
-@enduml
+endif
+
+stop
+
+footer Smart Room Occupancy System - Project Pico 2025
+@endum
