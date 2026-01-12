@@ -15,12 +15,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      {/* h-screen: pas satu layar | overflow-hidden: kunci scroll seluruh body */}
-      <body className="bg-brand-grey text-brand-dark flex flex-col h-screen overflow-hidden font-sans">
+      {/* HAPUS h-screen & overflow-hidden */}
+      <body className="bg-brand-grey text-brand-dark font-sans min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-grow overflow-y-auto">
+
+        {/* main fleksibel & ikut tinggi konten */}
+        <main className="flex-grow">
           {children}
         </main>
+
+        {/* footer ikut turun */}
         <Footer />
       </body>
     </html>
