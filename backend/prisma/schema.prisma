@@ -1,49 +1,36 @@
-// backend/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
-
-// --- Paste Model Tabel di Bawah sini ---
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String   
-  role      String   @default("USER") 
-  sensorLogs SensorLog[]
-  settings   Settings? 
-  alerts     AlertHistory[]
+  id       Int       @id @default(autoincrement())
+  username String    @unique
+  password String
+  role     String    @default("STUDENT") // "ADMIN" or "STUDENT"
+  bookings Booking[]
 }
 
-model SensorLog {
+model Room {
+  id          Int       @id @default(autoincrement())
+  name        String
+  capacity    Int
+  deviceId    String?   @unique
+  isOccupied  Boolean   @default(false)
+  lastMotion  DateTime  @default(now())
+  bookings    Booking[]
+}
+
+model Booking {
   id        Int      @id @default(autoincrement())
-  value     Float    
-  status    String   
-  createdAt DateTime @default(now())
   userId    Int
+  roomId    Int
+  startTime DateTime
+  endTime   DateTime
   user      User     @relation(fields: [userId], references: [id])
-}
-
-model Settings {
-  id              Int     @id @default(autoincrement())
-  thresholdLimit  Float   
-  monitoringMode  String  @default("OTOMATIS") 
-  enableNotify    Boolean @default(true)
-  userId          Int     @unique
-  user            User    @relation(fields: [userId], references: [id])
-}
-
-model AlertHistory {
-  id        Int      @id @default(autoincrement())
-  message   String   
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  room      Room     @relation(fields: [roomId], references: [id])
 }
