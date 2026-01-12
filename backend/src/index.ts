@@ -20,7 +20,7 @@ const app = new Elysia()
     // ESP32 bakal nembak ke sini buat update status
     .post("/api/motion", async ({ body }) => {
         const { deviceId, status } = body;
-        
+
         try {
             const room = await db.room.update({
                 where: { deviceId: deviceId },
