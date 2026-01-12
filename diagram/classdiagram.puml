@@ -114,7 +114,7 @@ package "Step Counter System (End-to-End)" {
     }
 
     class SerialPort <<external>>
-    class StreamReader <<external>>
+    class StreamReader <<external>> 
 
     WebSerialManager --> SerialPort
     WebSerialManager --> StreamReader
