@@ -1,88 +1,170 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
-/** ===== Type Data (REAL DATA NANTI DARI BACKEND / ARDUINO) ===== */
+/** ===== Types (SIAP UNTUK DATA REAL NANTI) ===== */
 type Room = {
   id: number;
   name: string;
-  status: "FULL" | "TERSEDIA";
+  deviceId?: string | null;
+  isOccupied?: boolean;
+  lastMotion?: string | null;
 };
 
-export default function DashboardUI() {
-  /** 🔥 DATA KOSONG DULU */
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [tab, setTab] = useState<"dashboard" | "rooms">("dashboard");
+type Booking = {
+  id: number;
+  roomId: number;
+  startTime: string;
+  endTime: string;
+  room?: { id: number; name: string };
+};
 
-  /** 🔢 Statistik (AMAN walau data kosong) */
+type Tab = "dashboard" | "rooms" | "booking";
+
+export default function DashboardPage() {
+  /** ===== STATE (KOSONG DULU – UI ONLY) ===== */
+  const [tab, setTab] = useState<Tab>("dashboard");
+  const [rooms] = useState<Room[]>([]);
+  const [bookings] = useState<Booking[]>([]);
+  const [error] = useState<string | null>(null);
+
+  const [selectedRoomId, setSelectedRoomId] = useState<number | "">("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  /** ===== Derived Stats (AMAN walau kosong) ===== */
   const total = rooms.length;
-  const full = rooms.filter((r) => r.status === "FULL").length;
-  const available = total - full;
+  const full = useMemo(() => rooms.filter((r) => r.isOccupied).length, [rooms]);
+  const available = Math.max(total - full, 0);
+
+  const availableRooms = useMemo(
+    () => rooms.filter((r) => !r.isOccupied),
+    [rooms]
+  );
 
   return (
     <div style={styles.page}>
-      {/* ===== Sidebar ===== */}
-      <aside style={styles.sidebar}>
-        <div style={styles.brand}>
-          <div style={styles.logo}>🏢</div>
-          <div>
-            <b>SMART ROOM</b>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>User Dashboard</div>
-          </div>
+      {/* ===== TOP BAR ===== */}
+      <header style={styles.topbar}>
+        <div style={styles.topbrand}>
+          ⚙️ <b>Smart<span style={{ opacity: 0.7 }}>Room</span></b>
         </div>
+        <nav style={styles.topnav}>
+          <span style={styles.toplink}>Home</span>
+          <span style={styles.toplink}>About</span>
+          <button style={styles.topbtn}>Register</button>
+        </nav>
+      </header>
 
-        <button style={menuBtn(tab === "dashboard")} onClick={() => setTab("dashboard")}>
-          📊 Dashboard
-        </button>
-        <button style={menuBtn(tab === "rooms")} onClick={() => setTab("rooms")}>
-          🚪 Ruangan
-        </button>
+      <div style={styles.body}>
+        {/* ===== SIDEBAR ===== */}
+        <aside style={styles.sidebar}>
+          <div style={styles.brandBox}>
+            <div style={styles.logo}>🏢</div>
+            <div>
+              <b>SMART ROOM</b>
+              <div style={{ fontSize: 12, opacity: 0.7 }}>User Dashboard</div>
+            </div>
+          </div>
 
-        <div style={{ flex: 1 }} />
+          <button style={menuBtn(tab === "dashboard")} onClick={() => setTab("dashboard")}>
+            📊 Dashboard
+          </button>
+          <button style={menuBtn(tab === "rooms")} onClick={() => setTab("rooms")}>
+            🚪 Ruangan
+          </button>
+          <button style={menuBtn(tab === "booking")} onClick={() => setTab("booking")}>
+            📅 Booking
+          </button>
+        </aside>
 
-        <button style={styles.logout}>⏏ Logout</button>
-      </aside>
+        {/* ===== MAIN ===== */}
+        <main style={styles.main}>
+          <h1 style={{ margin: 0 }}>Dashboard Monitoring</h1>
+          <p style={{ opacity: 0.7 }}>
+            Tampilan frontend sistem monitoring ruangan (UI Only)
+          </p>
 
-      {/* ===== Main ===== */}
-      <main style={styles.main}>
-        <h1 style={{ margin: 0 }}>Dashboard Monitoring</h1>
-        <p style={{ opacity: 0.7 }}>
-          Status ruangan akan update otomatis dari sensor (Arduino)
-        </p>
+          {error && (
+            <div style={styles.alert}>
+              <b>Error:</b> {error}
+            </div>
+          )}
 
-        {/* ===== Cards ===== */}
-        <section style={styles.cards}>
-          <Stat title="Total Ruangan" value={total} />
-          <Stat title="Tersedia" value={available} color="#22c55e" />
-          <Stat title="Full" value={full} color="#ef4444" />
-        </section>
-
-        {/* ===== Content ===== */}
-        {tab === "rooms" && (
-          <section style={styles.panel}>
-            <h2>Daftar Ruangan</h2>
-
-            {rooms.length === 0 ? (
-              <p style={{ opacity: 0.6 }}>
-                ⏳ Menunggu data dari sistem monitoring ruangan...
-              </p>
-            ) : (
-              <div style={styles.roomGrid}>
-                {rooms.map((room) => (
-                  <div key={room.id} style={styles.roomCard}>
-                    <b>{room.name}</b>
-                    <span style={badge(room.status)}>{room.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* ===== STAT CARDS ===== */}
+          <section style={styles.cards}>
+            <Stat title="Total Ruangan" value={total} />
+            <Stat title="Tersedia" value={available} color="#22c55e" />
+            <Stat title="Full" value={full} color="#ef4444" />
           </section>
-        )}
-      </main>
+
+          {/* ===== DASHBOARD ===== */}
+          {tab === "dashboard" && (
+            <section style={styles.panel}>
+              <h2>Ringkasan Sistem</h2>
+              <p style={{ opacity: 0.7 }}>
+                Data status ruangan akan ditampilkan secara realtime setelah
+                terhubung dengan sensor Arduino & backend.
+              </p>
+            </section>
+          )}
+
+          {/* ===== ROOMS ===== */}
+          {tab === "rooms" && (
+            <section style={styles.panel}>
+              <h2>Daftar Ruangan</h2>
+              <p style={{ opacity: 0.6 }}>
+                ⏳ Data ruangan belum tersedia (menunggu integrasi backend)
+              </p>
+            </section>
+          )}
+
+          {/* ===== BOOKING ===== */}
+          {tab === "booking" && (
+            <div style={styles.bookingGrid}>
+              <section style={styles.panel}>
+                <h2>Booking Ruangan</h2>
+
+                <label style={styles.label}>Ruangan</label>
+                <select style={styles.input} disabled>
+                  <option>Belum ada data ruangan</option>
+                </select>
+
+                <label style={styles.label}>Start Time</label>
+                <input
+                  type="datetime-local"
+                  style={styles.input}
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+
+                <label style={styles.label}>End Time</label>
+                <input
+                  type="datetime-local"
+                  style={styles.input}
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+
+                <button style={styles.submitBtn} disabled>
+                  Booking (Nonaktif)
+                </button>
+              </section>
+
+              <section style={styles.panel}>
+                <h2>History Booking</h2>
+                <p style={{ opacity: 0.6 }}>
+                  Belum ada data booking.
+                </p>
+              </section>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-/** ===== Components ===== */
+/** ===== UI HELPERS ===== */
 function Stat({ title, value, color = "#3b82f6" }: any) {
   return (
     <div style={{ ...styles.statCard, borderLeft: `6px solid ${color}` }}>
@@ -104,27 +186,30 @@ function menuBtn(active: boolean): React.CSSProperties {
   };
 }
 
-function badge(status: "FULL" | "TERSEDIA"): React.CSSProperties {
-  return {
-    padding: "6px 12px",
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    background: status === "FULL" ? "#fee2e2" : "#dcfce7",
-    color: status === "FULL" ? "#991b1b" : "#166534",
-    marginTop: 8,
-    display: "inline-block",
-  };
-}
-
-/** ===== Styles ===== */
+/** ===== STYLES ===== */
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    display: "grid",
-    gridTemplateColumns: "240px 1fr",
-    minHeight: "100vh",
-    background: "#f0f9ff",
+  page: { minHeight: "100vh", background: "#eaf6ff" },
+  topbar: {
+    height: 64,
+    background: "#183a4d",
+    color: "#fff",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 22px",
   },
+  topbrand: { display: "flex", alignItems: "center", gap: 8, fontSize: 18 },
+  topnav: { display: "flex", alignItems: "center", gap: 18 },
+  toplink: { cursor: "pointer", opacity: 0.9 },
+  topbtn: {
+    padding: "8px 14px",
+    borderRadius: 999,
+    border: "none",
+    background: "#214b64",
+    color: "#fff",
+    fontWeight: 700,
+  },
+  body: { display: "grid", gridTemplateColumns: "260px 1fr" },
   sidebar: {
     background: "#fff",
     padding: 16,
@@ -133,7 +218,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     borderRight: "1px solid #e5e7eb",
   },
-  brand: {
+  brandBox: {
     display: "flex",
     gap: 10,
     alignItems: "center",
@@ -142,21 +227,13 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#e0f2fe",
   },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     background: "#3b82f6",
     color: "#fff",
     display: "grid",
     placeItems: "center",
-  },
-  logout: {
-    padding: 12,
-    borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    fontWeight: 700,
-    cursor: "pointer",
   },
   main: { padding: 24 },
   cards: {
@@ -178,16 +255,21 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 16,
     border: "1px solid #e5e7eb",
   },
-  roomGrid: {
+  bookingGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gridTemplateColumns: "1fr 1fr",
     gap: 12,
-    marginTop: 12,
   },
-  roomCard: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: 14,
-    background: "#f8fafc",
+  label: { fontSize: 12, marginTop: 10, fontWeight: 700 },
+  input: { width: "100%", padding: 10, borderRadius: 12, border: "1px solid #e5e7eb" },
+  submitBtn: {
+    marginTop: 12,
+    width: "100%",
+    padding: 12,
+    borderRadius: 12,
+    border: "none",
+    background: "#9ca3af",
+    color: "#fff",
+    fontWeight: 800,
   },
 };
