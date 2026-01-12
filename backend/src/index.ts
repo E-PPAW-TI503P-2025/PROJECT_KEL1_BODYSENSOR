@@ -1,57 +1,43 @@
-import { Elysia, t } from 'elysia';
-import { PrismaClient } from '@prisma/client';
+import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
+import { swagger } from '@elysiajs/swagger';
 
-const db = new PrismaClient();
+// Import routes
+import { roomsRoutes } from './routes/rooms';
+import { motionRoutes } from './routes/motion';
+import { adminRoutes } from './routes/admin';
 
 const app = new Elysia()
     .use(cors())
-    .get("/", () => "Smart Room API is Online 🚀")
-
-    // --- ENDPOINT UNTUK USER/FRONTEND ---
-    // Ambil semua daftar ruangan
-    .get("/api/rooms", async () => {
-        return await db.room.findMany({
-            include: { bookings: true }
-        });
-    })
-
-    // --- ENDPOINT UNTUK ESP32 (IoT) ---
-    // ESP32 bakal nembak ke sini buat update status
-    .post("/api/motion", async ({ body }) => {
-        const { deviceId, status } = body;
-        
-        try {
-            const room = await db.room.update({
-                where: { deviceId: deviceId },
-                data: {
-                    isOccupied: status,
-                    lastMotion: new Date()
-                }
-            });
-            return { message: `Room ${room.name} status updated!`, status: room.isOccupied };
-        } catch (error) {
-            return { error: "Device ID tidak terdaftar di ruangan manapun." };
+    .use(swagger({
+        documentation: {
+            info: {
+                title: 'Smart Room API Documentation',
+                version: '1.0.0',
+                description: 'API untuk sistem Smart Room dengan sensor gerak dan manajemen ruangan'
+            },
+            tags: [
+                { name: 'General', description: 'Endpoint umum' },
+                { name: 'Rooms', description: 'Endpoint untuk data ruangan (User/Frontend)' },
+                { name: 'IoT', description: 'Endpoint untuk ESP32 dan sensor IoT' },
+                { name: 'Admin', description: 'Endpoint untuk administrasi ruangan' }
+            ]
         }
-    }, {
-        body: t.Object({
-            deviceId: t.String(),
-            status: t.Boolean()
-        })
+    }))
+    .get("/", () => "Smart Room API is Online 🚀", {
+        detail: {
+            tags: ['General'],
+            summary: 'Health Check',
+            description: 'Cek apakah API sudah online dan berjalan'
+        }
     })
 
-    // --- ENDPOINT ADMIN (CRUD) ---
-    // Tambah ruangan baru
-    .post("/api/admin/rooms", async ({ body }) => {
-        return await db.room.create({ data: body });
-    }, {
-        body: t.Object({
-            name: t.String(),
-            capacity: t.Number(),
-            deviceId: t.String()
-        })
-    })
+    // Use modular routes
+    .use(roomsRoutes)
+    .use(motionRoutes)
+    .use(adminRoutes)
 
     .listen(3001);
 
 console.log(`✅ Backend jalan di http://localhost:3001`);
+console.log(`📚 Swagger UI: http://localhost:3001/swagger`);
