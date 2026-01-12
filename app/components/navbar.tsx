@@ -20,8 +20,8 @@ export default function Navbar() {
             <div className="ml-10 flex items-baseline space-x-8">
               <Link href="/" className="hover:text-brand-light transition">Home</Link>
               <Link href="/about" className="hover:text-brand-light transition">About</Link>
-              <Link href="/login" className="bg-brand-medium hover:bg-brand-light px-5 py-2 rounded-full transition shadow-sm">
-                Login
+              <Link href="/register" className="bg-brand-medium hover:bg-brand-light px-5 py-2 rounded-full transition shadow-sm">
+                Register
               </Link>
             </div>
           </div>
