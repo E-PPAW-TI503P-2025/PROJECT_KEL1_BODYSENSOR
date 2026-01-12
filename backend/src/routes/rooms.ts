@@ -1,7 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { PrismaClient } from '@prisma/client';
-
-const db = new PrismaClient();
+import { db } from '../lib/db';
 
 export const roomsRoutes = new Elysia({ prefix: '/api' })
     // Ambil semua daftar ruangan
