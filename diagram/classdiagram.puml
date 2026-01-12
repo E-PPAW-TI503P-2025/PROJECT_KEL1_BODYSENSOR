@@ -5,6 +5,135 @@ title Class Diagram: Smart Room Occupancy System
 skinparam classAttributeIconSize 0
 skinparam style strictuml
 
+<<<<<<< HEAD
+package "Step Counter System (End-to-End)" {
+
+  package "Hardware (Arduino)" {
+
+    class MPU6050 {
+      +begin(): bool
+      +calibrate(samples: int): void
+      +readAccel(): AccelSample
+    }
+
+    class AccelSample {
+      +ax: float
+      +ay: float
+      +az: float
+      +timestampMs: long
+    }
+
+    class MagnitudeCalculator {
+      +computeMagnitudeG(s: AccelSample): float
+    }
+
+    class SMAFilter {
+      -windowSize: int
+      -buffer: float[]
+      +push(value: float): float
+      +reset(): void
+    }
+
+    class StepDetector {
+      -thresholdG: float
+      -state: StepState
+      -debounceMs: int
+      -lastStepTimeMs: long
+      +process(magG: float, nowMs: long): bool
+    }
+
+    enum StepState {
+      NORMAL
+      POTENTIAL_STEP
+    }
+
+    class StepCounter {
+      -count: int
+      +increment(): void
+      +getCount(): int
+      +reset(): void
+    }
+
+    class SerialTransmitter {
+      +baudRate: int
+      +begin(baud: int): void
+      +sendStep(count: int): void
+    }
+
+    class ArduinoController {
+      -sampleIntervalMs: int
+      +setup(): void
+      +loop(): void
+    }
+
+    MPU6050 --> AccelSample : creates
+    ArduinoController *-- MPU6050
+    ArduinoController *-- MagnitudeCalculator
+    ArduinoController *-- SMAFilter
+    ArduinoController *-- StepDetector
+    ArduinoController *-- StepCounter
+    ArduinoController *-- SerialTransmitter
+
+    MagnitudeCalculator --> AccelSample : uses
+    SMAFilter --> StepDetector : filtered magG
+    StepDetector --> StepState : uses
+    StepDetector --> StepCounter : step event
+    StepCounter --> SerialTransmitter : count
+  }
+
+  package "Software (Web)" {
+
+    class WebSerialManager {
+      -baudRate: int = 115200
+      -port: SerialPort
+      -reader: StreamReader
+      +connect(): Promise
+      +startReading(onLine): Promise
+      +disconnect(): Promise
+    }
+
+    class StepParser {
+      +parse(line: string): int
+    }
+
+    class AppState {
+      +stepTotal: int
+      +history: int[]
+      +updateTotal(n: int): void
+      +pushHistory(n: int): void
+    }
+
+    class UIController {
+      +renderTotal(n: int): void
+    }
+
+    class ChartController {
+      +appendPoint(n: int): void
+      +render(): void
+    }
+
+    class StorageService {
+      +saveTotal(n: int): void
+      +loadTotal(): int
+    }
+
+    class SerialPort <<external>>
+    class StreamReader <<external>> 
+
+    WebSerialManager --> SerialPort
+    WebSerialManager --> StreamReader
+    WebSerialManager --> StepParser : passes line
+    StepParser --> AppState : parsed n
+    AppState --> UIController : update UI
+    AppState --> ChartController : update chart
+    AppState --> StorageService : persist (opt)
+  }
+
+  class "Serial Link\n(USB/Serial)" as Link <<external>>
+
+  SerialTransmitter ..> Link : write "STEP:n"
+  Link ..> WebSerialManager : read stream
+=======
 ' 1. Class User (Mencakup Admin & User biasa)
 class User {
     - id : int
@@ -16,6 +145,7 @@ class User {
     + viewHistory() : List<Booking>
     + manageRoom() : void
     + manageDevice() : void
+>>>>>>> 039623581fc1383046945e02bb5114fcb709f00f
 }
 
 ' 2. Class Device (IoT ESP32) - Muncul dari Use Case "Manage Device"
