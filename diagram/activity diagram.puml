@@ -1,38 +1,36 @@
 @startuml
-title Activity Diagram: Monitoring Langkah User
+title Swimlane Activity Diagram - User Melakukan Booking Ruangan
 
 |User|
 start
-:Buka Dashboard Web;
-:Klik Tombol "Connect Serial";
+:Memilih ruangan;
+:Memilih tanggal & waktu;
+:Klik tombol "Booking";
 
-|Web Browser|
-:Tampilkan Daftar Port USB;
+|Sistem/Backend|
+:Terima request booking;
+:Validasi input (ruangan, waktu);
 
-|User|
-:Pilih Port Arduino;
+|Database/Admin|
+:Query ketersediaan ruangan\nberdasarkan waktu;
 
-|Web Browser|
-:Buka Koneksi WebSerial;
-:Mulai Mendengarkan Stream;
+|Sistem/Backend|
+if (Available?) then (Ya)
+  :Generate ID booking;
+  |Database/Admin|
+  :Simpan data booking;
+  :Update status ruangan\n(pada slot waktu itu);
+  |Sistem/Backend|
+  :Kirim response sukses;
+  |User|
+  :Tampilkan pesan "Booking berhasil";
+  stop
+else (Tidak)
+  :Kirim response gagal\n(ruangan tidak tersedia);
+  |User|
+  :Tampilkan pesan "Ruangan tidak tersedia";
+  :User pilih waktu/ruangan lain;
+  stop
+endif
 
-|IoT Device (Arduino)|
-:Mulai Membaca Gerakan Tubuh;
-repeat
-  :Deteksi Gerakan;
-  if (Langkah Terdeteksi?) then (Ya)
-    :Kirim Data "STEP:n";
-  endif
-backward:Terus Memantau;
-repeat while (Kabel Terhubung?)
-
-|Web Browser|
-:Terima Data Serial;
-:Parsing String ke Integer;
-:Update Grafik & Angka di UI;
-:Simpan ke LocalStorage;
-
-|User|
-:Lihat Statistik & Status;
-stop
 @enduml

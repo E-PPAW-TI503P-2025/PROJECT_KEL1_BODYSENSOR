@@ -1,0 +1,79 @@
+@startuml
+!theme plain
+hide circle
+skinparam linetype ortho
+
+' ENTITIES
+
+entity "Users" as user {
+  *user_id : INT <<PK>>
+  --
+  full_name : VARCHAR(100)
+  email : VARCHAR(100)
+  password_hash : VARCHAR(255)
+  role : ENUM('admin', 'mahasiswa', 'karyawan')
+  created_at : DATETIME
+}
+
+entity "Rooms" as room {
+  *room_id : INT <<PK>>
+  --
+  room_name : VARCHAR(50)
+  capacity : INT
+  location : VARCHAR(100)
+  description : TEXT
+  is_active : BOOLEAN
+  created_at : DATETIME
+}
+
+entity "IoT_Devices" as device {
+  *device_id : INT <<PK>>
+  --
+  mac_address : VARCHAR(17) <<Unique>>
+  device_name : VARCHAR(50)
+  status : ENUM('active', 'inactive', 'maintenance')
+  last_heartbeat : DATETIME
+  --
+  room_id : INT <<FK, Nullable>>
+}
+
+entity "Bookings" as booking {
+  *booking_id : INT <<PK>>
+  --
+  start_time : DATETIME
+  end_time : DATETIME
+  purpose : VARCHAR(255)
+  status : ENUM('pending', 'approved', 'rejected', 'cancelled', 'completed')
+  created_at : DATETIME
+  --
+  user_id : INT <<FK>>
+  room_id : INT <<FK>>
+}
+
+entity "Sensor_Logs" as log {
+  *log_id : BIGINT <<PK>>
+  --
+  timestamp : DATETIME
+  is_occupied : BOOLEAN
+  temperature : FLOAT
+  humidity : FLOAT
+  --
+  device_id : INT <<FK>>
+}
+
+' RELATIONSHIPS
+
+' User melakukan banyak Booking
+user ||..o{ booking : "makes"
+
+' Room memiliki banyak Booking history
+room ||..o{ booking : "has"
+
+' Room bisa memiliki 0 atau 1 Device (Assign/Unassign logic)
+' Jika device dipindah, room_id di update.
+room |o..o| device : "monitored by"
+
+' Device mengirimkan banyak Log data
+device ||..o{ log : "generates"
+
+@enduml

@@ -1,7 +1,11 @@
 @startuml
-skinparam classAttributeIconSize 0
-skinparam packageStyle rectangle
+title Class Diagram: Smart Room Occupancy System
 
+' Agar tampilan lebih rapi
+skinparam classAttributeIconSize 0
+skinparam style strictuml
+
+<<<<<<< HEAD
 package "Step Counter System (End-to-End)" {
 
   package "Hardware (Arduino)" {
@@ -129,5 +133,62 @@ package "Step Counter System (End-to-End)" {
 
   SerialTransmitter ..> Link : write "STEP:n"
   Link ..> WebSerialManager : read stream
+=======
+' 1. Class User (Mencakup Admin & User biasa)
+class User {
+    - id : int
+    - username : String
+    - password : String
+    - role : Enum {ADMIN, USER}
+    + login() : boolean
+    + createBooking() : void
+    + viewHistory() : List<Booking>
+    + manageRoom() : void
+    + manageDevice() : void
+>>>>>>> 039623581fc1383046945e02bb5114fcb709f00f
 }
+
+' 2. Class Device (IoT ESP32) - Muncul dari Use Case "Manage Device"
+class Device {
+    - id : int
+    - macAddress : String
+    - ipAddress : String
+    - status : String
+    - lastActive : DateTime
+    + sendOccupancyData() : void
+    + checkHealth() : boolean
+}
+
+' 3. Class Room - Muncul dari Use Case "Manage Ruangan"
+class Room {
+    - id : int
+    - name : String
+    - capacity : int
+    - isOccupied : boolean
+    - currentTemperature : float
+    + getStatus() : boolean
+    + updateStatus(status: boolean) : void
+}
+
+' 4. Class Booking - Muncul dari Use Case "Booking"
+class Booking {
+    - id : int
+    - startTime : DateTime
+    - endTime : DateTime
+    - status : String
+    + cancelBooking() : void
+}
+
+' === RELASI ANTAR CLASS ===
+
+' User (Mahasiswa/Karyawan) membuat banyak Booking
+User "1" -- "0..*" Booking : makes >
+
+' Satu Ruangan bisa memiliki banyak jadwal Booking
+Room "1" -- "0..*" Booking : has >
+
+' Satu Ruangan memiliki SATU Device (IoT) yang terpasang
+' (Relasi dari Use Case "Assign ESP32")
+Room "0..1" -- "0..1" Device : monitored_by >
+
 @enduml

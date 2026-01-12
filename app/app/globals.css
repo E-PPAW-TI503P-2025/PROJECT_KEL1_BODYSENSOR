@@ -1,23 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-dark: #1B3C53;
+  --brand-medium: #234C6A;
+  --brand-light: #456882;
+  --brand-grey: #E3E3E3;
+
+  --background: var(--brand-grey); /* Set background utama ke grey pilihanmu */
+  --foreground: var(--brand-dark); /* Set tulisan utama ke dark blue pilihanmu */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-medium: var(--brand-medium);
+  --color-brand-light: var(--brand-light);
+  --color-brand-grey: var(--brand-grey);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
-  }
-}
+  } */
 
 body {
   background: var(--background);
