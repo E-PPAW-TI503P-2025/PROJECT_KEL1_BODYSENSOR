@@ -32,10 +32,10 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          full_name: fullName.trim(),
+          nama_lengkap: fullName.trim(),
           email: email.trim(),
           password: password,
-          role: "user",
+          role: "STUDENT",
         }),
       });
 
