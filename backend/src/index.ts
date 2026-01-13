@@ -43,7 +43,7 @@ const app = new Elysia()
     .use(motionRoutes)
     .use(adminRoutes)
 
-    .listen(3001);
+    .listen(8000);
 
-console.log(`✅ Backend jalan di http://localhost:3001`);
-console.log(`📚 Swagger UI: http://localhost:3001/swagger`);
+console.log(`✅ Backend jalan di http://localhost:8000`);
+console.log(`📚 Swagger UI: http://localhost:8000/swagger`);
