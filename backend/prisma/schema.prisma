@@ -1,11 +1,37 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  nama_lengkap String 
+  email String    @unique
+  password String
+  role     String    @default("STUDENT") // "ADMIN" or "STUDENT"
+  bookings Booking[]
+}
+
+model Room {
+  id          Int       @id @default(autoincrement())
+  name        String
+  capacity    Int
+  deviceId    String?   @unique
+  isOccupied  Boolean   @default(false)
+  lastMotion  DateTime  @default(now())
+  bookings    Booking[]
+}
+
+model Booking {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  roomId    Int
+  startTime DateTime
+  endTime   DateTime
+  user      User     @relation(fields: [userId], references: [id])
+  room      Room     @relation(fields: [roomId], references: [id])
 }

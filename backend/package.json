@@ -6,12 +6,18 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
-    "@prisma/client": "^7.2.0",
+    "@elysiajs/cors": "^1.4.1",
+    "@elysiajs/swagger": "^1.3.1",
+    "@prisma/client": "^5.19.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "elysia": "latest"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "bun-types": "latest",
-    "prisma": "^7.2.0"
+    "prisma": "^5.19.0"
   },
   "module": "src/index.js"
 }
