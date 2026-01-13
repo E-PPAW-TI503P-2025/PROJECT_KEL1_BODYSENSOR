@@ -29,27 +29,25 @@ export default function RegisterPage() {
     try {
       const res = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          full_name: fullName.trim(),
+          nama_lengkap: fullName.trim(), // ✅ FIX
           email: email.trim(),
-          password: password,
+          password,
           role: "STUDENT",
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.message || "Registrasi gagal");
+        setError(data?.error || "Registrasi gagal");
         return;
       }
 
       alert("Registrasi berhasil, silakan login");
       router.push("/login");
-    } catch (err) {
+    } catch {
       setError("Tidak dapat terhubung ke server");
     } finally {
       setLoading(false);

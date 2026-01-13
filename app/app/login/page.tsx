@@ -27,14 +27,15 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.message || "Login gagal, periksa kembali email & password");
+        setError(data?.error || "Email atau password salah");
         return;
       }
 
-      // Simpan token ke localStorage/cookie di sini jika perlu
-      alert("Login Berhasil!");
-      router.push("/dashboard"); // Redirect ke dashboard setelah login
-    } catch (err) {
+      // Simpan user (opsional)
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      router.push("/dashboard");
+    } catch {
       setError("Tidak dapat terhubung ke server");
     } finally {
       setLoading(false);
@@ -99,7 +100,7 @@ export default function LoginPage() {
         <p className="text-center mt-8 text-brand-light text-sm">
           Belum punya akun?{" "}
           <Link href="/register" className="text-brand-medium font-bold hover:underline">
-            Daftar Gratis
+            Daftar Sekarang
           </Link>
         </p>
       </div>
