@@ -13,6 +13,7 @@ export const motionRoutes = new Elysia({ prefix: '/api' })
             // Konversi manual kalo ternyata hardware ngirim 1/0
             const isOccupied = typeof status === 'number' ? status === 1 : status;
 
+            // 1. Update status ruangan sekarang
             const room = await db.room.update({
                 where: { deviceId: deviceId },
                 data: {
@@ -21,13 +22,19 @@ export const motionRoutes = new Elysia({ prefix: '/api' })
                 }
             });
 
-            return {
-                message: `Room ${room.name} status updated!`,
-                status: room.isOccupied
-            };
+            // 2. SIMPEN KE DATABASE (History)
+            await db.motionLog.create({
+                data: {
+                    roomId: room.id,
+                    status: isOccupied,
+                    timestamp: new Date()
+                }
+            });
+
+            return { message: "Data logged and room updated" };
         } catch (error) {
-            set.status = 404; // Balikin error code yang bener
-            return { error: "Device ID tidak terdaftar." };
+            set.status = 404;
+            return { error: "Device ID gak ada di DB. Bikin dulu ruangannya!" };
         }
     }, {
         body: t.Object({
