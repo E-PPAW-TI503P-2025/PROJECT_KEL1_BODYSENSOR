@@ -3,25 +3,36 @@ import { db } from '../lib/db';
 
 export const motionRoutes = new Elysia({ prefix: '/api' })
     // ESP32 bakal nembak ke sini buat update status
-    .post("/motion", async ({ body }) => {
+    .post("/motion", async ({ body, set }) => {
+        // TAMBAHIN INI
+        console.log("---> DATA MASUK DARI ESP32:", body);
+
         const { deviceId, status } = body;
 
         try {
+            // Konversi manual kalo ternyata hardware ngirim 1/0
+            const isOccupied = typeof status === 'number' ? status === 1 : status;
+
             const room = await db.room.update({
                 where: { deviceId: deviceId },
                 data: {
-                    isOccupied: status,
+                    isOccupied: isOccupied,
                     lastMotion: new Date()
                 }
             });
-            return { message: `Room ${room.name} status updated!`, status: room.isOccupied };
+
+            return {
+                message: `Room ${room.name} status updated!`,
+                status: room.isOccupied
+            };
         } catch (error) {
-            return { error: "Device ID tidak terdaftar di ruangan manapun." };
+            set.status = 404; // Balikin error code yang bener
+            return { error: "Device ID tidak terdaftar." };
         }
     }, {
         body: t.Object({
             deviceId: t.String(),
-            status: t.Boolean()
+            status: t.Any() // Pakai Any biar gak rewel pas nerima input dari ESP32
         }),
         detail: {
             tags: ['IoT'],
@@ -39,9 +50,9 @@ export const motionRoutes = new Elysia({ prefix: '/api' })
                                     example: 'ESP32_001'
                                 },
                                 status: {
-                                    type: 'boolean',
-                                    example: true,
-                                    description: 'true = ada gerakan, false = tidak ada gerakan'
+                                    type: 'number',
+                                    example: 1,
+                                    description: 'Status sensor: 1 = ada gerakan, 0 = tidak ada gerakan. Bisa juga kirim boolean (true/false)'
                                 }
                             },
                             required: ['deviceId', 'status']
@@ -64,7 +75,7 @@ export const motionRoutes = new Elysia({ prefix: '/api' })
                         }
                     }
                 },
-                400: {
+                404: {
                     description: 'Device ID tidak ditemukan',
                     content: {
                         'application/json': {
