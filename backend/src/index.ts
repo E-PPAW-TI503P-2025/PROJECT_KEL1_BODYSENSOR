@@ -6,6 +6,8 @@ import { swagger } from '@elysiajs/swagger';
 import { roomsRoutes } from './routes/rooms';
 import { motionRoutes } from './routes/motion';
 import { adminRoutes } from './routes/admin';
+import { userRoutes } from './routes/user';
+import { bookingRoutes } from './routes/booking';
 
 const app = new Elysia()
     .use(cors())
@@ -18,6 +20,8 @@ const app = new Elysia()
             },
             tags: [
                 { name: 'General', description: 'Endpoint umum' },
+                { name: 'Auth', description: 'Endpoint untuk autentikasi user (Register & Login)' },
+                { name: 'Bookings', description: 'Endpoint untuk booking ruangan' },
                 { name: 'Rooms', description: 'Endpoint untuk data ruangan (User/Frontend)' },
                 { name: 'IoT', description: 'Endpoint untuk ESP32 dan sensor IoT' },
                 { name: 'Admin', description: 'Endpoint untuk administrasi ruangan' }
@@ -33,6 +37,8 @@ const app = new Elysia()
     })
 
     // Use modular routes
+    .use(userRoutes)
+    .use(bookingRoutes)
     .use(roomsRoutes)
     .use(motionRoutes)
     .use(adminRoutes)
