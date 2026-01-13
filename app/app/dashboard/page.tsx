@@ -1,507 +1,265 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
-/** ===== Types (SIAP UNTUK DATA REAL NANTI) ===== */
+/** ===== CONFIG ===== */
+const BASE_URL = "http://localhost:8000";
+
+/** ===== TYPES (Sesuai Skema Backend) ===== */
 type Room = {
   id: number;
   name: string;
-  deviceId?: string | null;
-  isOccupied?: boolean;
-  lastMotion?: string | null;
+  capacity: number;
+  deviceId: string;
+  isOccupied: boolean;
+  lastMotion: string | null;
+  bookings: any[];
 };
 
 type Booking = {
   id: number;
+  userId: number;
   roomId: number;
   startTime: string;
   endTime: string;
-  room?: { id: number; name: string };
+  room?: { name: string };
 };
-
-type Tab = "dashboard" | "rooms" | "booking";
 
 export default function DashboardPage() {
-  /** ===== STATE (KOSONG DULU – UI ONLY) ===== */
-  const [tab, setTab] = useState<Tab>("dashboard");
-  const [rooms] = useState<Room[]>([]);
-  const [bookings] = useState<Booking[]>([]);
-  const [error] = useState<string | null>(null);
+  /** ===== STATE ===== */
+  const [activeTab, setActiveTab] = useState<"monitoring" | "booking">("monitoring");
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [selectedRoomId, setSelectedRoomId] = useState<number | "">("");
+  // Form Booking State
+  const [selectedRoomId, setSelectedRoomId] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const currentUserId = 1; // Simulasi ID user yang login
 
-  /** ===== Derived Stats (AMAN walau kosong) ===== */
-  const total = rooms.length;
-  const full = useMemo(() => rooms.filter((r) => r.isOccupied).length, [rooms]);
-  const available = Math.max(total - full, 0);
+  /** ===== FETCH DATA (Sesuai api/rooms & api/bookings) ===== */
+  const fetchData = async () => {
+    try {
+      // Mengambil data dari endpoint GET /api/rooms
+      // Dan GET /api/bookings dengan filter userId
+      const [resRooms, resBookings] = await Promise.all([
+        fetch(`${BASE_URL}/api/rooms`),
+        fetch(`${BASE_URL}/api/bookings?userId=${currentUserId}`)
+      ]);
 
-  const availableRooms = useMemo(
-    () => rooms.filter((r) => !r.isOccupied),
-    [rooms]
-  );
+      if (!resRooms.ok || !resBookings.ok) throw new Error("Gagal mengambil data dari server");
 
-  return (
-    <div style={styles.page}>
-      {/* ✅ TOP BAR DIHAPUS — biar navbar tidak double (pakai navbar global/atas saja) */}
+      const dataRooms = await resRooms.json();
+      const dataBookings = await resBookings.json();
 
-      <div style={styles.shell}>
-        {/* ===== SIDEBAR ===== */}
-        <aside style={styles.sidebar}>
-          <div style={styles.brandBox}>
-            <div style={styles.logo}>🏢</div>
-            <div>
-              <div style={styles.sideTitle}>SMART ROOM</div>
-              <div style={styles.sideSub}>User Dashboard</div>
-            </div>
-          </div>
-
-          <div style={styles.menuGroupLabel}>MENU</div>
-
-          <button
-            style={menuBtn(tab === "dashboard")}
-            onClick={() => setTab("dashboard")}
-          >
-            <span style={styles.menuIcon}>📊</span>
-            <span>Dashboard</span>
-          </button>
-
-          <button
-            style={menuBtn(tab === "rooms")}
-            onClick={() => setTab("rooms")}
-          >
-            <span style={styles.menuIcon}>🚪</span>
-            <span>Ruangan</span>
-          </button>
-
-          <button
-            style={menuBtn(tab === "booking")}
-            onClick={() => setTab("booking")}
-          >
-            <span style={styles.menuIcon}>📅</span>
-            <span>Booking</span>
-          </button>
-        </aside>
-
-        {/* ===== MAIN ===== */}
-        <main style={styles.main}>
-          <div style={styles.pageHeader}>
-            <div>
-              <h1 style={styles.h1}>Dashboard Monitoring</h1>
-              <p style={styles.lead}>
-                Tampilan frontend sistem monitoring ruangan (UI only).
-              </p>
-            </div>
-
-            {/* ✅ STATUS BADGE DIHAPUS */}
-          </div>
-
-          {error && (
-            <div style={styles.alert}>
-              <div style={{ fontWeight: 900 }}>Error</div>
-              <div style={{ opacity: 0.95 }}>{error}</div>
-            </div>
-          )}
-
-          {/* ===== STAT CARDS ===== */}
-          <section style={styles.cards}>
-            <Stat title="Total Ruangan" value={total} tone="info" />
-            <Stat title="Tersedia" value={available} tone="success" />
-            <Stat title="Full" value={full} tone="danger" />
-          </section>
-
-          {/* ===== CONTENT ===== */}
-          {tab === "dashboard" && (
-            <section style={styles.panel}>
-              <PanelTitle
-                title="Ringkasan Sistem"
-                subtitle="Overview monitoring ruangan dan integrasi realtime."
-              />
-              <div style={styles.panelBody}>
-                <EmptyState
-                  title="Belum ada data realtime"
-                  desc="Status ruangan akan tampil otomatis setelah terhubung dengan backend & sensor Arduino."
-                />
-              </div>
-            </section>
-          )}
-
-          {tab === "rooms" && (
-            <section style={styles.panel}>
-              <PanelTitle
-                title="Daftar Ruangan"
-                subtitle="Informasi status dan device tiap ruangan."
-              />
-              <div style={styles.panelBody}>
-                <EmptyState
-                  title="Data ruangan belum tersedia"
-                  desc="Menunggu integrasi endpoint ruangan."
-                />
-              </div>
-            </section>
-          )}
-
-          {tab === "booking" && (
-            <div style={styles.bookingGrid}>
-              <section style={styles.panel}>
-                <PanelTitle
-                  title="Booking Ruangan"
-                  subtitle="Form booking (nonaktif sampai data ruangan tersedia)."
-                />
-
-                <div style={styles.form}>
-                  <Field label="Ruangan">
-                    <select style={styles.input} disabled value="">
-                      <option value="">Belum ada data ruangan</option>
-                    </select>
-                  </Field>
-
-                  <div style={styles.form2col}>
-                    <Field label="Start Time">
-                      <input
-                        type="datetime-local"
-                        style={styles.input}
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                      />
-                    </Field>
-
-                    <Field label="End Time">
-                      <input
-                        type="datetime-local"
-                        style={styles.input}
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                      />
-                    </Field>
-                  </div>
-
-                  <button style={styles.submitBtn} disabled>
-                    Booking (Nonaktif)
-                  </button>
-
-                  <div style={styles.note}>
-                    💡 Aktifkan saat rooms sudah terisi dari backend.
-                  </div>
-                </div>
-              </section>
-
-              <section style={styles.panel}>
-                <PanelTitle
-                  title="History Booking"
-                  subtitle="Riwayat pemesanan akan muncul di sini."
-                />
-                <div style={styles.panelBody}>
-                  <EmptyState
-                    title="Belum ada data booking"
-                    desc="Riwayat booking akan tampil setelah integrasi backend."
-                  />
-                </div>
-              </section>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
-
-/** ===== SMALL COMPONENTS ===== */
-function PanelTitle({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div style={styles.panelHead}>
-      <div>
-        <div style={styles.h2}>{title}</div>
-        {subtitle ? <div style={styles.subtle}>{subtitle}</div> : null}
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div style={styles.empty}>
-      <div style={styles.emptyIcon}>⏳</div>
-      <div>
-        <div style={{ fontWeight: 900 }}>{title}</div>
-        <div style={{ opacity: 0.75, marginTop: 4 }}>{desc}</div>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label style={styles.field}>
-      <span style={styles.label}>{label}</span>
-      {children}
-    </label>
-  );
-}
-
-/** ===== UI HELPERS ===== */
-function Stat({
-  title,
-  value,
-  tone = "info",
-}: {
-  title: string;
-  value: number;
-  tone?: "info" | "success" | "danger";
-}) {
-  const toneMap = {
-    info: { bar: TOKENS.primary, bg: "#ffffff" },
-    success: { bar: TOKENS.success, bg: "#ffffff" },
-    danger: { bar: TOKENS.danger, bg: "#ffffff" },
-  } as const;
-
-  const t = toneMap[tone];
-
-  return (
-    <div style={{ ...styles.statCard, background: t.bg }}>
-      <div style={{ ...styles.statBar, background: t.bar }} />
-      <div style={{ fontSize: 13, opacity: 0.75, fontWeight: 700 }}>
-        {title}
-      </div>
-      <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: -0.6 }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function menuBtn(active: boolean): React.CSSProperties {
-  return {
-    ...styles.menuBtn,
-    background: active ? "rgba(37, 99, 235, 0.10)" : "transparent",
-    borderColor: active ? "rgba(37, 99, 235, 0.25)" : "transparent",
-    color: active ? TOKENS.text : TOKENS.muted,
+      setRooms(dataRooms); // roomsRoutes mengembalikan array langsung
+      setBookings(dataBookings.bookings || []); // bookingRoutes mengembalikan objek { bookings: [] }
+      setError(null);
+    } catch (err: any) {
+      setError("Koneksi ke port 8000 gagal. Pastikan Backend Elysia menyala.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 5000); // Sinkronisasi realtime sensor tiap 5 detik
+    return () => clearInterval(interval);
+  }, []);
+
+  /** ===== SUBMIT BOOKING (Sesuai POST api/bookings) ===== */
+  const handleBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRoomId || !startTime || !endTime) return alert("Mohon lengkapi semua data!");
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUserId,
+          roomId: Number(selectedRoomId),
+          startTime: new Date(startTime).toISOString(), // Format date-time ISO
+          endTime: new Date(endTime).toISOString(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error || "Gagal membuat booking");
+
+      alert("Booking Berhasil: " + result.message);
+      setSelectedRoomId("");
+      setStartTime("");
+      setEndTime("");
+      fetchData(); // Refresh data setelah booking
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  /** ===== UI LOGIC ===== */
+  const stats = useMemo(() => ({
+    total: rooms.length,
+    available: rooms.filter(r => !r.isOccupied).length,
+    occupied: rooms.filter(r => r.isOccupied).length
+  }), [rooms]);
+
+  return (
+    <div style={styles.container}>
+      {/* SIDEBAR */}
+      <nav style={styles.sidebar}>
+        <div style={styles.brand}>🏢 SMART ROOM</div>
+        <div style={styles.menuList}>
+          <button 
+            style={activeTab === "monitoring" ? styles.menuBtnActive : styles.menuBtn} 
+            onClick={() => setActiveTab("monitoring")}
+          >
+            📊 Monitoring
+          </button>
+          <button 
+            style={activeTab === "booking" ? styles.menuBtnActive : styles.menuBtn} 
+            onClick={() => setActiveTab("booking")}
+          >
+            📅 Reservasi
+          </button>
+        </div>
+      </nav>
+
+      {/* MAIN CONTENT */}
+      <main style={styles.main}>
+        <header style={styles.header}>
+          <h1>Dashboard User</h1>
+          <p>Sistem Manajemen Ruangan Berbasis IoT (Port 8000)</p>
+        </header>
+
+        {error && <div style={styles.errorAlert}>{error}</div>}
+
+        {/* STATS CARDS */}
+        <section style={styles.statsGrid}>
+          <Card title="Total Ruangan" value={stats.total} color="#2563eb" />
+          <Card title="Tersedia" value={stats.available} color="#16a34a" />
+          <Card title="Terisi" value={stats.occupied} color="#ef4444" />
+        </section>
+
+        {/* MONITORING TAB */}
+        {activeTab === "monitoring" && (
+          <div style={styles.panel}>
+            <h3>Status Ruangan Realtime</h3>
+            <div style={styles.roomGrid}>
+              {rooms.map(room => (
+                <div key={room.id} style={roomCardStyle(room.isOccupied)}>
+                  <div style={{fontWeight: 'bold', fontSize: '1.1rem'}}>{room.name}</div>
+                  <div style={{fontSize: '0.9rem', color: '#64748b'}}>Kapasitas: {room.capacity} orang</div>
+                  <div style={{
+                    marginTop: 10, 
+                    fontWeight: 'bold', 
+                    color: room.isOccupied ? '#ef4444' : '#16a34a'
+                  }}>
+                    {room.isOccupied ? "🔴 Sedang Digunakan" : "🟢 Tersedia"}
+                  </div>
+                  {room.lastMotion && (
+                    <div style={{fontSize: '0.75rem', marginTop: 8, opacity: 0.7}}>
+                      Gerakan Terakhir: {new Date(room.lastMotion).toLocaleTimeString()}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* BOOKING TAB */}
+        {activeTab === "booking" && (
+          <div style={styles.bookingContainer}>
+            <div style={styles.panel}>
+              <h3>Buat Booking Baru</h3>
+              <form onSubmit={handleBooking} style={styles.form}>
+                <label style={styles.label}>Pilih Ruangan</label>
+                <select 
+                  style={styles.input} 
+                  value={selectedRoomId} 
+                  onChange={(e) => setSelectedRoomId(e.target.value)}
+                >
+                  <option value="">-- Pilih --</option>
+                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+
+                <div style={styles.row}>
+                  <div style={{flex: 1}}>
+                    <label style={styles.label}>Waktu Mulai</label>
+                    <input type="datetime-local" style={styles.input} value={startTime} onChange={e => setStartTime(e.target.value)} />
+                  </div>
+                  <div style={{flex: 1}}>
+                    <label style={styles.label}>Waktu Selesai</label>
+                    <input type="datetime-local" style={styles.input} value={endTime} onChange={e => setEndTime(e.target.value)} />
+                  </div>
+                </div>
+                <button type="submit" style={styles.submitBtn}>Konfirmasi Booking</button>
+              </form>
+            </div>
+
+            <div style={styles.panel}>
+              <h3>Riwayat Booking Anda</h3>
+              <div style={styles.historyList}>
+                {bookings.length > 0 ? bookings.map(b => (
+                  <div key={b.id} style={styles.historyItem}>
+                    <strong>{b.room?.name || `Ruang ${b.roomId}`}</strong>
+                    <div style={{fontSize: '0.8rem', color: '#64748b'}}>
+                      {new Date(b.startTime).toLocaleString()} - {new Date(b.endTime).toLocaleTimeString()}
+                    </div>
+                  </div>
+                )) : <p style={{textAlign: 'center', opacity: 0.5}}>Belum ada riwayat.</p>}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
 
-/** ===== DESIGN TOKENS ===== */
-const TOKENS = {
-  bg: "#f4f7fb",
-  card: "#ffffff",
-  text: "#0f172a",
-  muted: "#475569",
-  border: "rgba(15, 23, 42, 0.08)",
-  shadow: "0 10px 30px rgba(2, 6, 23, 0.08)",
-  radius: 16,
-  primary: "#2563eb",
-  success: "#16a34a",
-  danger: "#ef4444",
-};
+/** ===== HELPER COMPONENTS & STYLES ===== */
+function Card({ title, value, color }: { title: string, value: number, color: string }) {
+  return (
+    <div style={{...styles.statCard, borderTop: `4px solid ${color}`}}>
+      <div style={{fontSize: '0.85rem', color: '#64748b', fontWeight: '600'}}>{title}</div>
+      <div style={{fontSize: '1.8rem', fontWeight: 'bold', marginTop: 5}}>{value}</div>
+    </div>
+  );
+}
 
-/** ===== STYLES ===== */
+const roomCardStyle = (isOccupied: boolean): React.CSSProperties => ({
+  padding: '20px',
+  borderRadius: '12px',
+  background: isOccupied ? '#fff1f2' : '#ffffff',
+  border: `1px solid ${isOccupied ? '#fecaca' : '#e2e8f0'}`,
+  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+  transition: 'transform 0.2s ease'
+});
+
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", background: TOKENS.bg, color: TOKENS.text },
-
-  shell: {
-    display: "grid",
-    gridTemplateColumns: "280px 1fr",
-    alignItems: "start",
-  },
-
-  sidebar: {
-    position: "sticky",
-    top: 0,
-    height: "100vh",
-    background: TOKENS.card,
-    padding: 16,
-    borderRight: `1px solid ${TOKENS.border}`,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  },
-
-  brandBox: {
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-    padding: 14,
-    borderRadius: TOKENS.radius,
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.08))",
-    border: `1px solid ${TOKENS.border}`,
-  },
-  logo: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    background: TOKENS.primary,
-    color: "#fff",
-    display: "grid",
-    placeItems: "center",
-    boxShadow: "0 12px 18px rgba(37,99,235,0.25)",
-  },
-  sideTitle: { fontWeight: 900, letterSpacing: -0.3 },
-  sideSub: { fontSize: 12, opacity: 0.7 },
-
-  menuGroupLabel: {
-    fontSize: 11,
-    letterSpacing: 1,
-    fontWeight: 900,
-    opacity: 0.55,
-    marginTop: 6,
-    marginBottom: 2,
-  },
-
-  menuBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    width: "100%",
-    padding: "12px 12px",
-    borderRadius: 14,
-    border: "1px solid transparent",
-    cursor: "pointer",
-    fontWeight: 900,
-    textAlign: "left",
-    transition: "all 120ms ease",
-    background: "transparent",
-  },
-  menuIcon: { width: 24, textAlign: "center" as const },
-
-  main: {
-    padding: 22,
-    maxWidth: 1100,
-    width: "100%",
-    margin: "0 auto",
-  },
-
-  pageHeader: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 16,
-    flexWrap: "wrap",
-  },
-  h1: { margin: 0, fontSize: 26, letterSpacing: -0.6 },
-  lead: { marginTop: 6, marginBottom: 0, opacity: 0.7 },
-
-  alert: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: TOKENS.radius,
-    background: "rgba(239, 68, 68, 0.10)",
-    border: "1px solid rgba(239, 68, 68, 0.25)",
-  },
-
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 12,
-    marginTop: 16,
-  },
-
-  statCard: {
-    position: "relative",
-    background: TOKENS.card,
-    padding: 16,
-    borderRadius: TOKENS.radius,
-    border: `1px solid ${TOKENS.border}`,
-    boxShadow: "0 10px 20px rgba(2,6,23,0.06)",
-    overflow: "hidden",
-  },
-  statBar: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    width: 8,
-    height: "100%",
-    opacity: 0.95,
-  },
-
-  panel: {
-    marginTop: 14,
-    background: TOKENS.card,
-    padding: 16,
-    borderRadius: TOKENS.radius,
-    border: `1px solid ${TOKENS.border}`,
-    boxShadow: TOKENS.shadow,
-  },
-  panelHead: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    paddingBottom: 12,
-    borderBottom: `1px solid ${TOKENS.border}`,
-  },
-  panelBody: { paddingTop: 14 },
-
-  h2: { fontSize: 16, fontWeight: 900, letterSpacing: -0.2 },
-  subtle: { fontSize: 13, opacity: 0.7, marginTop: 4 },
-
-  bookingGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 12,
-    marginTop: 14,
-  },
-
-  form: { paddingTop: 14, display: "flex", flexDirection: "column", gap: 12 },
-  form2col: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 12,
-  },
-
-  field: { display: "flex", flexDirection: "column", gap: 6 },
-  label: { fontSize: 12, fontWeight: 900, opacity: 0.8 },
-
-  input: {
-    width: "100%",
-    padding: "11px 12px",
-    borderRadius: 14,
-    border: `1px solid ${TOKENS.border}`,
-    outline: "none",
-    background: "#fff",
-    fontSize: 14,
-  },
-
-  submitBtn: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 14,
-    border: "1px solid rgba(15, 23, 42, 0.10)",
-    background: "rgba(148, 163, 184, 0.65)",
-    color: "#0b1220",
-    fontWeight: 900,
-    cursor: "not-allowed",
-  },
-
-  note: { fontSize: 12, opacity: 0.75 },
-
-  empty: {
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-    padding: 14,
-    borderRadius: TOKENS.radius,
-    border: `1px dashed rgba(15, 23, 42, 0.18)`,
-    background: "rgba(15, 23, 42, 0.02)",
-  },
-  emptyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(37,99,235,0.10)",
-    border: "1px solid rgba(37,99,235,0.20)",
-  },
+  container: { display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' },
+  sidebar: { width: '260px', backgroundColor: '#1e293b', color: '#fff', padding: '24px' },
+  brand: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '40px', color: '#38bdf8' },
+  menuList: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  menuBtn: { padding: '12px', textAlign: 'left', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '8px', fontWeight: '600' },
+  menuBtnActive: { padding: '12px', textAlign: 'left', background: '#334155', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '8px', fontWeight: '600' },
+  main: { flex: 1, padding: '32px', maxWidth: '1200px', margin: '0 auto' },
+  header: { marginBottom: '32px' },
+  errorAlert: { padding: '12px', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '8px', marginBottom: '20px', fontWeight: '600' },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' },
+  statCard: { backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' },
+  panel: { backgroundColor: '#fff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', marginBottom: '20px' },
+  roomGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginTop: '20px' },
+  bookingContainer: { display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' },
+  label: { fontSize: '0.85rem', fontWeight: '600', color: '#475569' },
+  input: { padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px', width: '100%' },
+  row: { display: 'flex', gap: '12px' },
+  submitBtn: { padding: '12px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' },
+  historyList: { marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  historyItem: { padding: '12px', borderBottom: '1px solid #f1f5f9' }
 };

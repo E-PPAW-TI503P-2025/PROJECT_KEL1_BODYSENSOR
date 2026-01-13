@@ -45,5 +45,5 @@ const app = new Elysia()
 
     .listen(8000);
 
-console.log(`✅ Backend jalan di http://localhost:8000`);
-console.log(`📚 Swagger UI: http://localhost:8000/swagger`);
+console.log(`✅ Backend jalan di http://localhost:8080`);
+console.log(`📚 Swagger UI: http://localhost:8080/swagger`);
