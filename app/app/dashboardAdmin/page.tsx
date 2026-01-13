@@ -24,12 +24,12 @@ export default function AdminDashboardPage() {
     try {
       setError(null);
       // GANTI URL INI JIKA SUDAH DEPLOY. Saat dev pakai localhost:8080
-      const response = await fetch('http://localhost:8000/rooom'); 
-      
+      const response = await fetch('http://localhost:8000/api/rooms');
+
       if (!response.ok) {
         throw new Error(`Server Error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setSensorData(data);
     } catch (err) {
@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
@@ -71,9 +71,9 @@ export default function AdminDashboardPage() {
               Status Real-time &bull; Auto-refresh setiap 5 detik
             </p>
           </div>
-          
-          <button 
-            onClick={fetchData} 
+
+          <button
+            onClick={fetchData}
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition shadow-sm font-medium text-sm disabled:opacity-50"
           >
@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
             <div>
               <p className="text-sm text-slate-500 font-medium">Sensor Aktif</p>
               <h3 className="text-2xl font-bold text-slate-800">
-                {sensorData.filter(s => s.status === "Active").length} 
+                {sensorData.filter(s => s.status === "Active").length}
                 <span className="text-slate-400 text-lg font-normal"> / {sensorData.length || 0}</span>
               </h3>
             </div>
@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
           Status Perangkat & Ruangan
         </h2>
-        
+
         {/* Loading Skeleton jika data kosong saat pertama load */}
         {isLoading && sensorData.length === 0 ? (
           <div className="text-center py-10 text-slate-400 animate-pulse">Sedang menghubungkan ke sensor...</div>
@@ -145,12 +145,11 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sensorData.map((sensor) => (
               <div key={sensor.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200">
-                
+
                 {/* Indikator Warna Header Card */}
-                <div className={`h-1.5 w-full ${
-                  sensor.status === 'Inactive' ? 'bg-slate-300' : 
+                <div className={`h-1.5 w-full ${sensor.status === 'Inactive' ? 'bg-slate-300' :
                   sensor.motionDetected ? 'bg-rose-500' : 'bg-emerald-500'
-                }`} />
+                  }`} />
 
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
@@ -158,15 +157,14 @@ export default function AdminDashboardPage() {
                       <h3 className="font-semibold text-lg text-slate-800 leading-tight">{sensor.location}</h3>
                       <span className="text-xs text-slate-400 font-mono mt-1 block">ID: {sensor.id}</span>
                     </div>
-                    
+
                     {/* Badge Status */}
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
-                      sensor.status === 'Inactive' 
-                        ? 'bg-slate-100 text-slate-500 border-slate-200'
-                        : sensor.motionDetected 
-                          ? 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse' // Efek kedip
-                          : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                    }`}>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${sensor.status === 'Inactive'
+                      ? 'bg-slate-100 text-slate-500 border-slate-200'
+                      : sensor.motionDetected
+                        ? 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse' // Efek kedip
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                      }`}>
                       {sensor.status === 'Inactive' ? 'OFFLINE' : (sensor.motionDetected ? 'ADA ORANG' : 'KOSONG')}
                     </span>
                   </div>
@@ -189,7 +187,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         )}
-        
+
         {/* Tampilan jika data kosong tapi tidak error */}
         {!isLoading && !error && sensorData.length === 0 && (
           <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 text-slate-500">
