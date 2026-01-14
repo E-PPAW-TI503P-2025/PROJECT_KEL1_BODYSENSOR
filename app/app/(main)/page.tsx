@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AboutPage from "./about/page";
 import { MoveRight, Radio, LayoutDashboard, Clock } from "lucide-react";
 
 export default function Home() {
@@ -55,6 +56,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <AboutPage />
     </div>
   );
 }

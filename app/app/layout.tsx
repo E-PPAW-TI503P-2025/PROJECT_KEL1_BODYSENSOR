@@ -1,31 +1,15 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+// app/layout.tsx
+import "./globals.css"; // <--- WAJIB ADA DI SINI
+import { Inter } from "next/font/google"; // Jika Anda pakai font
 
-export const metadata: Metadata = {
-  title: "SmartRoom - Kelompok 1",
-  description: "Sistem Monitoring Occupancy Ruangan Berbasis IoT",
-};
+const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      {/* HAPUS h-screen & overflow-hidden */}
-      <body className="bg-brand-grey text-brand-dark font-sans min-h-screen flex flex-col">
-        <Navbar />
-
-        {/* main fleksibel & ikut tinggi konten */}
-        <main className="flex-grow">
-          {children}
-        </main>
-
-        {/* footer ikut turun */}
-        <Footer />
+      {/* CSS globals.css akan otomatis masuk ke sini via body class */}
+      <body className={`${inter.className} bg-brand-grey text-brand-dark min-h-screen`}>
+        {children} 
       </body>
     </html>
   );

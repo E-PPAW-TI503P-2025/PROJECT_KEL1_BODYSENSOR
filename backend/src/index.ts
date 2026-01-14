@@ -8,6 +8,7 @@ import { motionRoutes } from './routes/motion';
 import { adminRoutes } from './routes/admin';
 import { userRoutes } from './routes/user';
 import { bookingRoutes } from './routes/booking';
+import { dashboardRoutes } from './routes/dashboard';
 
 const app = new Elysia()
     .use(cors())
@@ -24,7 +25,8 @@ const app = new Elysia()
                 { name: 'Bookings', description: 'Endpoint untuk booking ruangan' },
                 { name: 'Rooms', description: 'Endpoint untuk data ruangan (User/Frontend)' },
                 { name: 'IoT', description: 'Endpoint untuk ESP32 dan sensor IoT' },
-                { name: 'Admin', description: 'Endpoint untuk administrasi ruangan' }
+                { name: 'Admin', description: 'Endpoint untuk administrasi ruangan' },
+                { name: 'Dashboard', description: 'Endpoint untuk data dashboard' }
             ]
         }
     }))
@@ -42,6 +44,7 @@ const app = new Elysia()
     .use(roomsRoutes)
     .use(motionRoutes)
     .use(adminRoutes)
+    .use(dashboardRoutes)
 
     .listen(8000);
 
