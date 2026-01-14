@@ -1,26 +1,42 @@
 @startuml
-title Deployment Diagram - Body Sensor Step Counter System
+title Deployment Diagram - Smart Room Occupancy System (Bun Runtime)
 
-node "User Device\n(Web Browser)" {
-  component "Frontend Web\n(Dashboard & Chart)" as FE
+skinparam componentStyle uml2
+skinparam node {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
 }
 
-node "Body Sensor Device\n(Arduino + MPU6050)" {
-  component "MPU6050\n(Accelerometer)" as MPU
-  component "Arduino MCU\n(Step Detection Logic)" as MCU
+node "IoT Edge Device" <<Device>> {
+    node "ESP32 Microcontroller" {
+        [PIR Sensor Module] as PIR
+        [HTTP Client] as HttpClient
+    }
 }
 
-node "Web Application\n(Client Side)" {
-  component "Web Serial API" as WS
-  component "JavaScript Logic\n(Parsing & State)" as JS
-  component "Chart.js\n(Visualization)" as CHART
-  component "LocalStorage\n(Optional)" as LS
+node "Application Server" <<Execution Environment (Bun)>> {
+    package "Backend Suite" {
+        [ElysiaJS API] as Elysia
+        [WebSocket Server] as WS
+        [Prisma ORM] as Prisma
+    }
+    database "SQLite Engine" {
+        file "storage.db" as DBFile
+    }
 }
 
-MPU -->MCU 
-MCU --> WS 
-WS --> JS
-JS --> FE
-JS --> CHART
-JS --> LS
+node "Client Workstation" <<PC/Mobile>> {
+    node "Web Browser" {
+        [Next.js Frontend] as Next
+    }
+}
+
+' Relationships
+PIR -right-> HttpClient : provides data
+HttpClient --(0-- Elysia : HTTP POST /api/update-status
+Next --(0-- Elysia : REST API Requests
+WS <..> Next : WebSocket (Real-time Sync)
+Elysia ..> Prisma : data mapping
+Prisma -- DBFile : SQL / File System
+
 @enduml

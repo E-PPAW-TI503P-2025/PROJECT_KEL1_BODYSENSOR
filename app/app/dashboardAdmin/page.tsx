@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Activity, Users, AlertCircle, BatteryCharging,
   RefreshCcw, WifiOff, Plus, Trash2, Edit, X, Save
@@ -13,18 +14,20 @@ const ROOMS_URL = `${API_BASE}/rooms`; // GET list of rooms
 
 // 1. DEFINISI TIPE DATA
 interface Sensor {
-  id: string;               // unique id used by frontend (prefer room numeric id as string)
-  roomId?: number;          // numeric DB id
-  deviceId?: string;        // device identifier (ESP32 id)
-  location: string;         // maps to Room.name
-  status: string;           // "Active" | "Inactive"
-  motionDetected: boolean;  // maps to Room.isOccupied
-  battery: number;          // client-side only, persisted in localStorage per device
+  id: string;
+  roomId?: number;
+  deviceId?: string;
+  location: string;
+  status: string;
+  motionDetected: boolean;
+  battery: number;
   capacity?: number;
-  lastUpdate: string;       // ISO String, maps to Room.lastMotion
+  lastUpdate: string;
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+
   // --- STATE UTAMA ---
   const [sensorData, setSensorData] = useState<Sensor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,9 +36,8 @@ export default function AdminDashboardPage() {
   // --- STATE CRUD (MODAL & FORM) ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // Penanda sedang mode Edit atau Create
+  const [isEditing, setIsEditing] = useState(false);
 
-  // State untuk form input
   const [formData, setFormData] = useState<Partial<Sensor>>({
     id: "",
     roomId: undefined,
@@ -47,7 +49,36 @@ export default function AdminDashboardPage() {
     capacity: 1
   });
 
-  // 2. FUNGSI FETCH DATA (GET)
+  // --- STATE USER LOGIN ---
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+  const token = localStorage.getItem("token"); // token login
+  const role = localStorage.getItem("ADMIN"); // "ADMIN" atau "STUDENT"
+  
+  if (!token) {
+    alert("Anda harus login dulu!");
+    router.push("/login");
+  } else {
+    setUserRole(role); 
+  }
+}, [router]);
+
+
+  useEffect(() => {
+    const role = localStorage.getItem("ADMIN"); // "ADMIN" atau "STUDENT"
+    setUserRole(role);
+  }, []);
+
+  const handleLogout = () => {
+    if (confirm("Yakin ingin logout?")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userRole");
+      router.push("/login");
+    }
+  };
+
+  // 2. FUNGSI FETCH DATA
   const fetchData = useCallback(async () => {
     try {
       setError(null);
@@ -56,10 +87,8 @@ export default function AdminDashboardPage() {
 
       const data = await response.json();
 
-      // helper to read battery levels from localStorage per device
       const batteryStore = JSON.parse(localStorage.getItem('batteryLevels') || '{}');
 
-      // Map backend Room model to our Sensor interface
       const mapped: Sensor[] = data.map((r: any) => ({
         id: String(r.id),
         roomId: r.id,
@@ -87,31 +116,24 @@ export default function AdminDashboardPage() {
     setIsSubmitting(true);
 
     try {
-      // Persiapkan payload sesuai schema backend (Room)
       const payload: any = {
         name: formData.location,
         deviceId: formData.deviceId ?? formData.id,
-        // capacity is required on create; default ke 1 jika tidak diisi
         capacity: (formData as any).capacity ?? 1
       };
 
       let url = `${ADMIN_URL}/rooms`;
       let method: 'POST' | 'PUT' = 'POST';
 
-      // Untuk update, backend membutuhkan numeric room ID di path
       if (isEditing) {
         const roomId = formData.roomId ?? parseInt(String(formData.id));
         url = `${ADMIN_URL}/rooms/${roomId}`;
         method = 'PUT';
-        // allow updating occupation state too
         payload.isOccupied = !!formData.motionDetected;
         payload.lastMotion = new Date().toISOString();
       }
 
-      // Validate capacity
       if (!payload.capacity || payload.capacity < 1) payload.capacity = 1;
-
-      // include occupancy info derived from status/motion selection
       payload.isOccupied = (formData.status === 'Active') || !!formData.motionDetected;
       if (payload.isOccupied) payload.lastMotion = new Date().toISOString();
 
@@ -123,12 +145,11 @@ export default function AdminDashboardPage() {
 
       if (!response.ok) {
         let errBody: any = {};
-        try { errBody = await response.json(); } catch (e) { /* ignore */ }
+        try { errBody = await response.json(); } catch (e) { }
         const msg = errBody?.error || errBody?.message || `Server Error: ${response.status}`;
         throw new Error(msg);
       }
 
-      // Persist battery for this device in localStorage
       const deviceKey = formData.deviceId ?? formData.id;
       if (deviceKey) {
         const batteryStore = JSON.parse(localStorage.getItem('batteryLevels') || '{}');
@@ -136,11 +157,9 @@ export default function AdminDashboardPage() {
         localStorage.setItem('batteryLevels', JSON.stringify(batteryStore));
       }
 
-      // Sukses
-      await fetchData(); // Refresh data
-      setIsModalOpen(false); // Tutup modal
+      await fetchData();
+      setIsModalOpen(false);
       alert(isEditing ? "Data berhasil diupdate!" : "Sensor baru berhasil ditambahkan!");
-
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       alert("Error: " + msg);
@@ -161,7 +180,6 @@ export default function AdminDashboardPage() {
 
       if (!response.ok) throw new Error("Gagal menghapus");
 
-      // Remove battery store if any
       const deviceKey = sensor.deviceId ?? sensor.id;
       if (deviceKey) {
         const batteryStore = JSON.parse(localStorage.getItem('batteryLevels') || '{}');
@@ -169,14 +187,14 @@ export default function AdminDashboardPage() {
         localStorage.setItem('batteryLevels', JSON.stringify(batteryStore));
       }
 
-      await fetchData(); // Refresh list
+      await fetchData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       alert("Gagal menghapus sensor: " + msg);
     }
   };
 
-  // --- HELPER UNTUK MEMBUKA MODAL ---
+  // --- HELPER MODAL ---
   const openCreateModal = () => {
     setIsEditing(false);
     setFormData({
@@ -194,7 +212,6 @@ export default function AdminDashboardPage() {
 
   const openEditModal = (sensor: Sensor) => {
     setIsEditing(true);
-    // Ensure status and motionDetected are consistent when loading into form
     setFormData({
       ...sensor,
       status: sensor.status ?? (sensor.motionDetected ? 'Active' : 'Inactive'),
@@ -203,7 +220,7 @@ export default function AdminDashboardPage() {
     setIsModalOpen(true);
   };
 
-  // 5. EFFECT: Auto Refresh
+  // 5. EFFECT AUTO REFRESH
   useEffect(() => {
     fetchData();
     const intervalId = setInterval(fetchData, 5000);
@@ -223,15 +240,20 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-slate-50 relative">
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
 
-        {/* Header Section */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Dashboard Monitoring</h1>
             <p className="text-slate-500 mt-1">Status Real-time & CRUD System</p>
           </div>
 
-          <div className="flex gap-3">
-            {/* Tombol Tambah */}
+          <div className="flex gap-3 items-center">
+            {userRole && (
+              <span className="text-slate-600 text-sm font-medium mr-3">
+                Login sebagai: <span className="font-bold">{userRole}</span>
+              </span>
+            )}
+
             <button
               onClick={openCreateModal}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm font-medium text-sm"
@@ -239,7 +261,6 @@ export default function AdminDashboardPage() {
               <Plus className="w-4 h-4" /> Tambah Sensor
             </button>
 
-            {/* Tombol Refresh */}
             <button
               onClick={fetchData}
               disabled={isLoading}
@@ -247,6 +268,13 @@ export default function AdminDashboardPage() {
             >
               <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               {isLoading ? '...' : 'Refresh'}
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition shadow-sm font-medium text-sm"
+            >
+              Logout
             </button>
           </div>
         </div>
@@ -259,7 +287,7 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* --- STATISTIK RINGKASAN (Sama seperti sebelumnya) --- */}
+        {/* --- STATISTIK --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
             <div className="p-3 bg-blue-100 text-blue-600 rounded-lg"><Activity className="w-6 h-6" /></div>
@@ -284,22 +312,19 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* --- GRID STATUS SENSOR --- */}
+        {/* --- GRID SENSOR --- */}
         {isLoading && sensorData.length === 0 ? (
           <div className="text-center py-10 text-slate-400 animate-pulse">Sedang memuat data...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sensorData.map((sensor) => (
               <div key={sensor.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 group">
-
-                {/* Header Card dengan Tombol Edit & Delete (Muncul saat Hover) */}
                 <div className="relative p-5 pb-0">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-lg text-slate-800 leading-tight">{sensor.location}</h3>
                       <span className="text-xs text-slate-400 font-mono mt-1 block">ID: {sensor.roomId} {sensor.deviceId ? `• ${sensor.deviceId}` : ''}</span>
                     </div>
-                    {/* Badge Status */}
                     <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${sensor.status === 'Inactive' ? 'bg-slate-100 text-slate-500 border-slate-200'
                       : sensor.motionDetected ? 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse'
                         : 'bg-emerald-50 text-emerald-600 border-emerald-200'
@@ -307,8 +332,6 @@ export default function AdminDashboardPage() {
                       {sensor.status === 'Inactive' ? 'OFFLINE' : (sensor.motionDetected ? 'ADA ORANG' : 'KOSONG')}
                     </span>
                   </div>
-
-                  {/* Action Buttons (Absolute Top Right) */}
                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded-lg shadow-sm">
                     <button onClick={() => openEditModal(sensor)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Edit">
                       <Edit className="w-4 h-4" />
@@ -329,8 +352,6 @@ export default function AdminDashboardPage() {
                     <div className="text-slate-400 text-xs">Updated: {formatTime(sensor.lastUpdate)}</div>
                   </div>
                 </div>
-
-                {/* Color Bar Indikator */}
                 <div className={`h-1.5 w-full ${sensor.status === 'Inactive' ? 'bg-slate-300' :
                   sensor.motionDetected ? 'bg-rose-500' : 'bg-emerald-500'
                   }`} />
@@ -341,7 +362,7 @@ export default function AdminDashboardPage() {
 
       </main>
 
-      {/* --- MODAL (CREATE & EDIT) --- */}
+      {/* --- MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -354,8 +375,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-
-              {/* Input ID (Hanya bisa diedit saat Create) */}
+              {/* ID */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">ID Sensor (Device ID)</label>
                 <input
@@ -368,7 +388,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              {/* Input Lokasi */}
+              {/* Lokasi */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Lokasi</label>
                 <input
@@ -380,7 +400,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              {/* Capacity (required by backend) */}
+              {/* Capacity */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
                 <input
@@ -391,7 +411,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              {/* Slider Baterai */}
+              {/* Battery */}
               <div>
                 <div className="flex justify-between mb-1">
                   <label className="text-sm font-medium text-slate-700">Level Baterai</label>

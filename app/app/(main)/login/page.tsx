@@ -7,6 +7,7 @@ import { MoveRight, Lock, Mail } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,20 +21,33 @@ export default function LoginPage() {
     try {
       const res = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.message || "Login gagal, periksa kembali email & password");
+        setError(data?.error || "Email atau password salah");
         return;
       }
 
-      // Simpan token ke localStorage/cookie di sini jika perlu
-      alert("Login Berhasil!");
-      router.push("/dashboard"); // Redirect ke dashboard setelah login
+      // ✅ SIMPAN JWT & USER
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // 🔥 REDIRECT SESUAI ROLE
+      if (data.user.role === "admin") {
+        router.push("/dashboardAdmin");
+      } else {
+        router.push("/dashboard");
+      }
+
     } catch (err) {
       setError("Tidak dapat terhubung ke server");
     } finally {
@@ -44,20 +58,31 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-brand-grey flex items-center justify-center px-6">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-brand-dark/5 p-8 border border-brand-light/10">
+        
+        {/* HEADER */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-brand-dark mb-2">Selamat Datang</h1>
-          <p className="text-brand-light">Masuk untuk memonitor ruangan Anda</p>
+          <h1 className="text-3xl font-extrabold text-brand-dark mb-2">
+            Selamat Datang
+          </h1>
+          <p className="text-brand-light">
+            Masuk untuk memonitor ruangan Anda
+          </p>
         </div>
 
+        {/* ERROR */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
             {error}
           </div>
         )}
 
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* EMAIL */}
           <div>
-            <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Email</label>
+            <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">
+              Email
+            </label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-light/50" />
               <input
@@ -71,8 +96,11 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* PASSWORD */}
           <div>
-            <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Password</label>
+            <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">
+              Password
+            </label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-light/50" />
               <input
@@ -86,6 +114,7 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* BUTTON */}
           <button
             type="submit"
             disabled={loading}
@@ -96,10 +125,14 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* LINK REGISTER */}
         <p className="text-center mt-8 text-brand-light text-sm">
           Belum punya akun?{" "}
-          <Link href="/register" className="text-brand-medium font-bold hover:underline">
-            Daftar Gratis
+          <Link
+            href="/register"
+            className="text-brand-medium font-bold hover:underline"
+          >
+            Daftar Sekarang
           </Link>
         </p>
       </div>
